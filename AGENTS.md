@@ -160,6 +160,8 @@ Reglas entre módulos (ADR-04):
 - Nombres de tablas y columnas en `snake_case`.
 - El modelo está en `docs/diagramas/modelo-datos.mmd`.
 - Una sola tabla `usuarios` (rol como columna) y una sola tabla `medidas` (tipo como columna, con restricciones `CHECK` por tipo).
+- **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
+- **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
 
 ## Convenciones de código
 
@@ -173,9 +175,8 @@ Reglas entre módulos (ADR-04):
 Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **frená y preguntá** en lugar de asumir:
 
 - Integración SOAP: qué datos se envían, si la asociación es sincrónica o en segundo plano, política de reintentos, manejo de rechazos de negocio, validación del expediente al darlo de alta.
-- Almacenamiento de fotos (filesystem, base de datos u otro).
 - Diseño del simulador SOAP.
-- Despliegue completo con Docker Compose (por ahora solo PostgreSQL).
-- Estrategia de migraciones de TypeORM y datos semilla.
+- Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
+- Datos semilla (obras, expedientes, inspecciones y catálogos de prueba).
 - Estrategia de tests.
 - Licencia del repositorio.
