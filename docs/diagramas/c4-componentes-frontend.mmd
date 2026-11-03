@@ -1,0 +1,44 @@
+flowchart TB
+    inspector["<b>Inspector</b><br/>[Persona]<br/>Celular propio"]
+    supadm["<b>Supervisor / Administrativo</b><br/>[Persona]"]
+    auth0["<b>Auth0</b><br/>[Sistema externo]<br/>Login con Google"]
+    api["<b>Backend NestJS</b><br/>[Contenedor]<br/>API REST"]
+
+    subgraph pwa["PWA Angular [Contenedor] · ejecuta en el navegador del celular"]
+        direction TB
+        auth["<b>auth</b><br/>SDK de Auth0, renovación<br/>del token y guards por rol"]
+        inspecciones["<b>inspecciones</b><br/>Lista de inspecciones<br/>asignadas al inspector"]
+        acta["<b>acta</b><br/>Formulario: ítems, observaciones,<br/>medidas y notificado"]
+        camara["<b>camara</b><br/>Captura de fotos dentro<br/>de la app (sin galería)"]
+        geo["<b>geolocalizacion</b><br/>Ubicación del dispositivo<br/>(opcional)"]
+        consulta["<b>consulta</b><br/>Pantallas de supervisor<br/>y administrativo"]
+        cola["<b>cola-offline</b><br/>Actas pendientes de envío<br/>guardadas en IndexedDB"]
+        sync["<b>sincronizacion</b><br/>Envío y reintentos al<br/>recuperar la señal"]
+        apiclient["<b>api-client</b><br/>Llamadas HTTP con<br/>el token adjunto"]
+        sw["<b>service worker</b><br/>Permite abrir la app<br/>sin conexión"]
+    end
+
+    inspector --> inspecciones
+    inspector --> acta
+    supadm --> consulta
+
+    auth -- "OIDC" --> auth0
+    inspecciones --> apiclient
+    acta --> camara
+    acta --> geo
+    acta -- "al confirmar" --> cola
+    sync -- "lee pendientes" --> cola
+    sync --> apiclient
+    consulta --> apiclient
+    apiclient --> auth
+    apiclient -- "HTTPS / JSON" --> api
+
+    classDef person fill:#08427b,stroke:#052e56,color:#fff
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#fff
+    classDef cont fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000
+    class inspector,supadm person
+    class auth0 ext
+    class api cont
+    class auth,inspecciones,acta,camara,geo,consulta,cola,sync,apiclient,sw comp
+    style pwa fill:#f4f8fd,stroke:#0b4884,stroke-dasharray: 5 5

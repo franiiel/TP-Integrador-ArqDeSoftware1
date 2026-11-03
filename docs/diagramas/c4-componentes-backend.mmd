@@ -1,0 +1,43 @@
+flowchart TB
+    pwa["<b>PWA Angular</b><br/>[Contenedor]<br/>Usada por inspector,<br/>supervisor y administrativo"]
+    auth0["<b>Auth0</b><br/>[Sistema externo]<br/>Proveedor de identidad (OIDC)"]
+    soap["<b>Sistema municipal de expedientes</b><br/>[Sistema externo]<br/>Servicios SOAP"]
+    db[("<b>PostgreSQL</b><br/>[Contenedor]<br/>Datos del sistema")]
+
+    subgraph backend["Backend NestJS · Monolito modular [Contenedor]"]
+        direction TB
+        auth["<b>auth</b><br/>Valida tokens de Auth0<br/>y verifica roles (guards)"]
+        usuarios["<b>usuarios</b><br/>Datos propios del usuario:<br/>cargo y legajo"]
+        obras["<b>obras</b><br/>Obras y expedientes"]
+        inspecciones["<b>inspecciones</b><br/>Asignación y consulta<br/>de inspecciones"]
+        actas["<b>actas</b><br/>Recepción, numeración, medidas,<br/>fotos, revisión y anulación"]
+        catalogos["<b>catalogos</b><br/>Ítems de control y<br/>artículos normativos"]
+        integracion["<b>integracion-expedientes</b><br/>Adaptador SOAP:<br/>asociación de actas y reintentos"]
+        auditoria["<b>auditoria</b><br/>Registro de acciones<br/>sobre las actas"]
+    end
+
+    pwa -- "API REST / JSON<br/>HTTPS + token JWT" --> auth
+    auth -. "obtiene claves públicas (JWKS)" .-> auth0
+    auth --> usuarios
+    auth --> inspecciones
+    auth --> actas
+    auth --> obras
+    auth --> catalogos
+
+    actas --> inspecciones
+    actas --> catalogos
+    actas --> integracion
+    actas --> auditoria
+    inspecciones --> obras
+    inspecciones --> usuarios
+    integracion -- "SOAP / XML" --> soap
+
+    backend -- "TypeORM" --> db
+
+    classDef ext fill:#999999,stroke:#6b6b6b,color:#fff
+    classDef cont fill:#1168bd,stroke:#0b4884,color:#fff
+    classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000
+    class auth0,soap ext
+    class pwa,db cont
+    class auth,usuarios,obras,inspecciones,actas,catalogos,integracion,auditoria comp
+    style backend fill:#f4f8fd,stroke:#0b4884,stroke-dasharray: 5 5

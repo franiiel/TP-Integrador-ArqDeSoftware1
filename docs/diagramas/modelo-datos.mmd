@@ -1,0 +1,115 @@
+erDiagram
+    usuarios {
+        uuid id PK
+        varchar auth0_id UK
+        varchar nombre
+        varchar email
+        enum rol
+        varchar cargo "nullable"
+        varchar legajo "nullable"
+    }
+    obras {
+        uuid id PK
+        varchar direccion
+        varchar propietario
+        varchar profesional_responsable
+    }
+    expedientes {
+        uuid id PK
+        varchar numero UK
+        uuid obra_id FK,UK
+    }
+    inspecciones {
+        uuid id PK
+        uuid expediente_id FK
+        uuid inspector_id FK
+        uuid supervisor_id FK
+        date fecha_programada
+    }
+    actas {
+        uuid id PK "generado en el celular"
+        varchar numero UK "ej. 2026-00001"
+        uuid inspeccion_id FK,UK
+        uuid inspector_id FK
+        timestamptz fecha_hora_labrado
+        timestamptz fecha_hora_recepcion
+        numeric latitud "nullable"
+        numeric longitud "nullable"
+        text observaciones
+        varchar organismo_descargo
+        int plazo_descargo_cantidad
+        enum plazo_descargo_unidad
+        varchar notificado_nombre
+        varchar notificado_dni
+        boolean notificado_firmo
+        enum estado
+        uuid acta_rectificada_id FK,UK "nullable"
+    }
+    numeradores_acta {
+        int anio PK
+        int ultimo_numero
+    }
+    items_control {
+        uuid id PK
+        varchar descripcion
+    }
+    resultados_item {
+        uuid acta_id PK,FK
+        uuid item_control_id PK,FK
+        enum resultado
+    }
+    fotografias {
+        uuid id PK
+        uuid acta_id FK
+        varchar ruta_archivo
+        timestamptz fecha_captura
+    }
+    articulos_normativos {
+        uuid id PK
+        varchar ordenanza
+        varchar numero_articulo
+        text descripcion
+    }
+    medidas {
+        uuid id PK
+        uuid acta_id FK
+        enum tipo "INTIMACION o CLAUSURA"
+        text falta
+        uuid articulo_id FK
+        text conducta_a_corregir "solo intimacion"
+        int plazo_cantidad "solo intimacion"
+        enum plazo_unidad "solo intimacion"
+        enum tipo_clausura "solo clausura"
+        varchar sector_clausurado "solo clausura parcial"
+        varchar numero_faja "solo clausura"
+    }
+    anulaciones {
+        uuid id PK
+        uuid acta_id FK,UK
+        uuid supervisor_id FK
+        timestamptz fecha
+        text motivo
+    }
+    revisiones {
+        uuid id PK
+        uuid acta_id FK
+        uuid supervisor_id FK
+        timestamptz fecha
+    }
+
+    obras ||--|| expedientes : tiene
+    expedientes ||--o{ inspecciones : contiene
+    usuarios ||--o{ inspecciones : "inspector asignado"
+    usuarios ||--o{ inspecciones : "supervisor asignante"
+    inspecciones ||--|| actas : genera
+    usuarios ||--o{ actas : labra
+    actas |o--o| actas : rectifica
+    actas ||--|{ resultados_item : tiene
+    items_control ||--o{ resultados_item : evaluado_en
+    actas ||--|{ fotografias : tiene
+    actas ||--o{ medidas : dispone
+    articulos_normativos ||--o{ medidas : fundamenta
+    actas ||--o| anulaciones : anulada_por
+    usuarios ||--o{ anulaciones : emite
+    actas ||--o{ revisiones : revisada_en
+    usuarios ||--o{ revisiones : registra

@@ -1,0 +1,519 @@
+openapi: 3.1.0
+info:
+  title: API de Inspecciones de Obra
+  version: 0.1.0
+  summary: Caso de uso mínimo · un inspector completa un acta y queda asociada al expediente.
+  description: |
+    Contrato de la API del backend (NestJS). Diseño primero: el código debe respetar
+    esta especificación; cualquier cambio de contrato se hace primero acá.
+
+    **Autenticación:** todas las operaciones requieren un token de acceso emitido por
+    Auth0 en el encabezado `Authorization: Bearer <token>`. El rol del usuario viaja
+    en el token.
+
+    **Alcance:** solo se documentan los endpoints del caso de uso mínimo.
+servers:
+  - url: http://localhost:3000/api
+    description: Desarrollo local
+security:
+  - auth0: []
+tags:
+  - name: usuarios
+    description: Datos del usuario autenticado
+  - name: inspecciones
+    description: Inspecciones asignadas
+  - name: catalogos
+    description: Ítems de control y artículos normativos (solo lectura)
+  - name: actas
+    description: Envío y consulta de actas de inspección
+
+paths:
+  /me:
+    get:
+      tags: [usuarios]
+      operationId: obtenerUsuarioActual
+      summary: Datos del usuario autenticado
+      description: Devuelve rol, cargo y legajo del usuario logueado.
+      responses:
+        '200':
+          description: Usuario autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+
+  /inspecciones:
+    get:
+      tags: [inspecciones]
+      operationId: listarInspeccionesAsignadas
+      summary: Inspecciones asignadas al inspector
+      description: Devuelve solo las inspecciones asignadas al inspector autenticado.
+      responses:
+        '200':
+          description: Inspecciones asignadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inspeccion'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+
+  /catalogos/items-control:
+    get:
+      tags: [catalogos]
+      operationId: listarItemsControl
+      summary: Ítems de control para el formulario del acta
+      responses:
+        '200':
+          description: Catálogo de ítems de control
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemControl'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /catalogos/articulos-normativos:
+    get:
+      tags: [catalogos]
+      operationId: listarArticulosNormativos
+      summary: Artículos normativos para fundamentar medidas
+      responses:
+        '200':
+          description: Catálogo de artículos normativos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArticuloNormativo'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+
+  /actas:
+    post:
+      tags: [actas]
+      operationId: recibirActa
+      summary: Enviar un acta desde el celular
+      description: |
+        Recibe el acta completa y sus fotos en un único envío. El servidor la emite,
+        le asigna el número correlativo anual y la deja en estado `PENDIENTE_ASOCIACION`
+        mientras se asocia al expediente en el sistema municipal.
+
+        **Idempotente:** el `id` del acta se genera en el celular. Si llega un acta con un
+        `id` ya recibido (por ejemplo, por un reintento tras un corte de señal), el servidor
+        no la duplica y responde `200` con los datos del acta ya emitida.
+
+        Solo el inspector asignado a la inspección puede enviar su acta.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [acta, fotos]
+              properties:
+                acta:
+                  $ref: '#/components/schemas/ActaNueva'
+                fotos:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  description: Fotos tomadas con la cámara dentro de la app, en el mismo orden que `acta.fotos`.
+                  items:
+                    type: string
+                    contentMediaType: image/jpeg
+            encoding:
+              acta:
+                contentType: application/json
+              fotos:
+                contentType: image/jpeg, image/png
+      responses:
+        '201':
+          description: Acta recibida y emitida por primera vez
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActaEmitida'
+        '200':
+          description: El acta ya había sido recibida (reintento); se devuelve la existente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActaEmitida'
+        '400':
+          $ref: '#/components/responses/DatosInvalidos'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: La inspección ya tiene otra acta emitida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /actas/{id}:
+    get:
+      tags: [actas]
+      operationId: obtenerActa
+      summary: Número y estado de un acta
+      description: El inspector solo puede consultar sus propias actas.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Acta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActaEmitida'
+        '401':
+          $ref: '#/components/responses/NoAutenticado'
+        '403':
+          $ref: '#/components/responses/SinPermiso'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+components:
+  securitySchemes:
+    auth0:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de acceso emitido por Auth0 (login con Google).
+
+  responses:
+    NoAutenticado:
+      description: Falta el token o es inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    SinPermiso:
+      description: El rol del usuario no permite la operación
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NoEncontrado:
+      description: El recurso no existe
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    DatosInvalidos:
+      description: Los datos enviados no cumplen las validaciones
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode:
+          type: integer
+          examples: [400]
+        message:
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        error:
+          type: string
+          examples: [Bad Request]
+
+    Rol:
+      type: string
+      enum: [INSPECTOR, SUPERVISOR, ADMINISTRATIVO]
+    EstadoActa:
+      type: string
+      enum: [PENDIENTE_ASOCIACION, ASOCIADA, RECTIFICADA, ANULADA]
+    ResultadoControl:
+      type: string
+      enum: [CUMPLE, NO_CUMPLE, NO_APLICA]
+    UnidadPlazo:
+      type: string
+      enum: [HORAS, DIAS_HABILES]
+    TipoClausura:
+      type: string
+      enum: [TOTAL, PARCIAL]
+
+    Plazo:
+      type: object
+      required: [cantidad, unidad]
+      properties:
+        cantidad:
+          type: integer
+          minimum: 1
+          examples: [5]
+        unidad:
+          $ref: '#/components/schemas/UnidadPlazo'
+
+    Ubicacion:
+      type: object
+      required: [latitud, longitud]
+      properties:
+        latitud:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitud:
+          type: number
+          minimum: -180
+          maximum: 180
+
+    Usuario:
+      type: object
+      required: [id, nombre, email, rol]
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        email:
+          type: string
+          format: email
+        rol:
+          $ref: '#/components/schemas/Rol'
+        cargo:
+          type: [string, 'null']
+          description: Solo inspector y supervisor
+        legajo:
+          type: [string, 'null']
+          description: Solo inspector y supervisor
+
+    Inspeccion:
+      type: object
+      required: [id, fechaProgramada, expediente, obra]
+      properties:
+        id:
+          type: string
+          format: uuid
+        fechaProgramada:
+          type: string
+          format: date
+        expediente:
+          type: object
+          required: [numero]
+          properties:
+            numero:
+              type: string
+        obra:
+          type: object
+          required: [direccion, propietario, profesionalResponsable]
+          properties:
+            direccion:
+              type: string
+            propietario:
+              type: string
+            profesionalResponsable:
+              type: string
+        actaId:
+          type: [string, 'null']
+          format: uuid
+          description: Acta ya emitida para esta inspección, si existe
+
+    ItemControl:
+      type: object
+      required: [id, descripcion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        descripcion:
+          type: string
+
+    ArticuloNormativo:
+      type: object
+      required: [id, ordenanza, numeroArticulo, descripcion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ordenanza:
+          type: string
+        numeroArticulo:
+          type: string
+        descripcion:
+          type: string
+
+    ResultadoItem:
+      type: object
+      required: [itemControlId, resultado]
+      properties:
+        itemControlId:
+          type: string
+          format: uuid
+        resultado:
+          $ref: '#/components/schemas/ResultadoControl'
+
+    Intimacion:
+      type: object
+      required: [tipo, falta, articuloId, conductaACorregir, plazo]
+      properties:
+        tipo:
+          const: INTIMACION
+        falta:
+          type: string
+          minLength: 1
+        articuloId:
+          type: string
+          format: uuid
+        conductaACorregir:
+          type: string
+          minLength: 1
+        plazo:
+          $ref: '#/components/schemas/Plazo'
+
+    Clausura:
+      type: object
+      required: [tipo, falta, articuloId, tipoClausura, numeroFaja]
+      properties:
+        tipo:
+          const: CLAUSURA
+        falta:
+          type: string
+          minLength: 1
+        articuloId:
+          type: string
+          format: uuid
+        tipoClausura:
+          $ref: '#/components/schemas/TipoClausura'
+        sectorClausurado:
+          type: [string, 'null']
+          description: Obligatorio si `tipoClausura` es PARCIAL
+        numeroFaja:
+          type: string
+          minLength: 1
+
+    Medida:
+      oneOf:
+        - $ref: '#/components/schemas/Intimacion'
+        - $ref: '#/components/schemas/Clausura'
+      discriminator:
+        propertyName: tipo
+        mapping:
+          INTIMACION: '#/components/schemas/Intimacion'
+          CLAUSURA: '#/components/schemas/Clausura'
+
+    Notificado:
+      type: object
+      required: [nombre, dni, firmo]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        dni:
+          type: string
+          minLength: 1
+        firmo:
+          type: boolean
+          description: '`false` si se negó a firmar'
+
+    ActaNueva:
+      type: object
+      description: Acta tal como la envía el celular.
+      required:
+        - id
+        - inspeccionId
+        - fechaHoraLabrado
+        - resultadosItems
+        - observaciones
+        - medidas
+        - notificado
+        - organismoDescargo
+        - plazoDescargo
+        - fotos
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Generado en el celular; garantiza la idempotencia del envío
+        inspeccionId:
+          type: string
+          format: uuid
+        fechaHoraLabrado:
+          type: string
+          format: date-time
+          description: Fecha legal del acta, tomada del celular al confirmarla
+        ubicacion:
+          oneOf:
+            - $ref: '#/components/schemas/Ubicacion'
+            - type: 'null'
+          description: Opcional; `null` si no se pudo obtener
+        resultadosItems:
+          type: array
+          minItems: 1
+          description: Un resultado por cada ítem del catálogo
+          items:
+            $ref: '#/components/schemas/ResultadoItem'
+        observaciones:
+          type: string
+        medidas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Medida'
+        notificado:
+          $ref: '#/components/schemas/Notificado'
+        organismoDescargo:
+          type: string
+          minLength: 1
+          examples: [Juzgado de Faltas Municipal]
+        plazoDescargo:
+          $ref: '#/components/schemas/Plazo'
+        fotos:
+          type: array
+          minItems: 1
+          maxItems: 10
+          description: Metadatos de cada foto, en el mismo orden que los archivos adjuntos
+          items:
+            type: object
+            required: [fechaCaptura]
+            properties:
+              fechaCaptura:
+                type: string
+                format: date-time
+
+    ActaEmitida:
+      type: object
+      required: [id, numero, estado, fechaHoraLabrado, fechaHoraRecepcion]
+      properties:
+        id:
+          type: string
+          format: uuid
+        numero:
+          type: string
+          description: Correlativo por año, asignado por el servidor
+          examples: [2026-00001]
+        estado:
+          $ref: '#/components/schemas/EstadoActa'
+        fechaHoraLabrado:
+          type: string
+          format: date-time
+        fechaHoraRecepcion:
+          type: string
+          format: date-time

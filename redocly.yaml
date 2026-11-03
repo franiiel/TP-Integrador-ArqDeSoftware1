@@ -1,0 +1,8 @@
+extends:
+  - recommended
+
+rules:
+  # El repositorio todavía no define licencia.
+  info-license: off
+  # La única URL de servidor es la de desarrollo local.
+  no-server-example.com: off

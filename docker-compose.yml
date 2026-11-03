@@ -1,0 +1,25 @@
+# Servicios para desarrollo local.
+# Por ahora solo PostgreSQL; backend, frontend y simulador SOAP se agregan
+# cuando se defina el despliegue (ADR de Docker Compose).
+
+services:
+  db:
+    image: postgres:18
+    container_name: inspecciones-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-inspecciones}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-inspecciones}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
