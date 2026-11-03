@@ -28,7 +28,26 @@ Se diseña el sistema completo, pero **solo se implementa**:
 1. **Inicio de sesión** (Auth0).
 2. **Caso de uso mínimo:** un inspector completa un acta y queda asociada al expediente.
 
-No implementes asignación de inspecciones, revisión, rectificación, anulación ni pantallas de supervisor o administrativo, salvo que se pida explícitamente. Si algo hace falta para el caso de uso mínimo (por ejemplo, datos de prueba de obras e inspecciones), resolvelo con datos semilla, no con pantallas nuevas.
+El objetivo del código es **demostrar las decisiones de arquitectura**, no cubrir todo el dominio. El NFR estrella es la simplicidad: implementar de más contradice el escenario.
+
+### Qué se implementa
+
+- Login con Auth0 (Google) y control de acceso por rol.
+- Lista de las inspecciones asignadas al inspector.
+- Formulario del acta: ítems de control, observaciones, fotos con la cámara, ubicación opcional, notificado y medidas.
+- Guardado offline en el celular y reenvío automático al recuperar la señal (es la restricción central del escenario).
+- Recepción idempotente del acta en el backend y numeración correlativa por año.
+- Asociación al expediente a través del simulador SOAP.
+
+### Qué queda solo diseñado (no implementar)
+
+- Asignación de inspecciones, revisión, rectificación y anulación de actas.
+- Pantallas de supervisor y administrativo.
+- Alta de obras y expedientes: se resuelve con **datos semilla**.
+- Hashes de integridad y registro de auditoría: se documentan en un ADR, no se programan.
+- Sincronización en segundo plano con la app cerrada (Background Sync): alcanza con reintentar mientras la app está abierta.
+
+Si una tarea parece requerir algo de esta lista, frená y preguntá antes de implementarlo.
 
 ## Stack
 
@@ -84,8 +103,7 @@ Una sola aplicación NestJS, un solo proceso, una sola base de datos, organizada
 | `integracion-expedientes` | Adaptador SOAP: asociación de actas y reintentos |
 | `auditoria` | Registro de acciones sobre las actas |
 
-<!-- PENDIENTE DE CONFIRMACIÓN DEL GRUPO: las tres reglas siguientes fueron propuestas en el ADR-04 pero todavía no se aprobaron. -->
-Reglas entre módulos *(pendientes de confirmación del grupo)*:
+Reglas entre módulos (ADR-04):
 - Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`).
 - Cada módulo es dueño de sus tablas: otro módulo no usa sus repositorios ni consulta sus tablas directamente.
 - **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML.
@@ -155,7 +173,6 @@ Reglas entre módulos *(pendientes de confirmación del grupo)*:
 Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **frená y preguntá** en lugar de asumir:
 
 - Integración SOAP: qué datos se envían, si la asociación es sincrónica o en segundo plano, política de reintentos, manejo de rechazos de negocio, validación del expediente al darlo de alta.
-- Integridad legal: hashes del acta y las fotos, registro de auditoría.
 - Almacenamiento de fotos (filesystem, base de datos u otro).
 - Diseño del simulador SOAP.
 - Despliegue completo con Docker Compose (por ahora solo PostgreSQL).
