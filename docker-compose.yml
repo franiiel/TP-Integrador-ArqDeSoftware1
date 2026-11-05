@@ -1,6 +1,6 @@
 # Servicios para desarrollo local.
 # Por ahora solo PostgreSQL; backend, frontend y simulador SOAP se agregan
-# cuando se defina el despliegue (ADR de Docker Compose).
+# cuando se defina el despliegue.
 
 services:
   db:

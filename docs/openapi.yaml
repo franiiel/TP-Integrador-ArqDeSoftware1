@@ -31,7 +31,7 @@ paths:
       tags: [usuarios]
       operationId: obtenerUsuarioActual
       summary: Datos del usuario autenticado
-      description: Devuelve rol, cargo y legajo del usuario logueado.
+      description: Devuelve nombre, email, rol, cargo y legajo del usuario logueado.
       responses:
         '200':
           description: Usuario autenticado

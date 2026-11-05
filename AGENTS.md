@@ -44,7 +44,7 @@ El objetivo del código es **demostrar las decisiones de arquitectura**, no cubr
 - Asignación de inspecciones, revisión, rectificación y anulación de actas.
 - Pantallas de supervisor y administrativo.
 - Alta de obras y expedientes: se resuelve con **datos semilla**.
-- Hashes de integridad y registro de auditoría: se documentan en un ADR, no se programan.
+- Registro de auditoría (módulo `auditoria`) y verificación de integridad de las actas.
 - Sincronización en segundo plano con la app cerrada (Background Sync): alcanza con reintentar mientras la app está abierta.
 
 Si una tarea parece requerir algo de esta lista, frená y preguntá antes de implementarlo.
@@ -167,7 +167,7 @@ Reglas entre módulos (ADR-04):
 
 - **Idioma:** el dominio en español (`Acta`, `Inspeccion`, `emitirActa`, `fechaEmision`); lo técnico del framework en inglés (`ActasService`, `ActasController`, `actas.module.ts`). Sin tildes ni ñ en identificadores (`Inspeccion`, `numeroAnio`). Comentarios y textos de la interfaz en español.
 - TypeScript estricto en frontend y backend.
-- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/es/) en español, por ejemplo `feat(actas): recepción idempotente de actas` o `docs: agrega ADR de despliegue`.
+- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/es/) en español, por ejemplo `feat(actas): recepción idempotente de actas` o `docs: actualiza el contrato de la API`.
 - **Nunca subas secretos.** Toda configuración sensible va en `.env` (ignorado por git); documentá cada variable nueva en `.env.example`.
 
 ## Decisiones pendientes: no las inventes
