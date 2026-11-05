@@ -6,6 +6,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
 import { Rol, Usuario } from '../src/usuarios/usuario.entity.js';
+import { TEST_DB } from './test-env.js';
 
 describe('Caso de uso mínimo (e2e)', () => {
   let app: INestApplication;
@@ -32,7 +33,11 @@ describe('Caso de uso mínimo (e2e)', () => {
     app.setGlobalPrefix('api');
     await app.init();
 
-    inspector = await app.get(DataSource).getRepository(Usuario).save({
+    const db = app.get(DataSource);
+    if (db.options.database !== TEST_DB) {
+      throw new Error(`La app de test apunta a "${db.options.database}"`);
+    }
+    inspector = await db.getRepository(Usuario).save({
       auth0Id: 'google-oauth2|inspector',
       nombre: 'Ana Inspectora',
       email: 'ana@example.com',
