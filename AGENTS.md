@@ -145,7 +145,7 @@ Reglas entre módulos (ADR-04):
 - Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
 - Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
 - La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
-- Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año.
+- Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año. El año es el de `fechaEmision` en hora argentina, no el de la recepción.
 - Cada acta genera exactamente una notificación (fecha de emisión, destinatario y medio). El sistema no le envía nada al destinatario; solo la registra.
 
 ## API

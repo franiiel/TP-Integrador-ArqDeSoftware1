@@ -199,7 +199,7 @@ describe('Caso de uso mínimo (e2e)', () => {
   });
 
   describe('POST /api/actas', () => {
-    const anio = new Date().getFullYear();
+    const anio = 2026; // year of fechaEmision in actaNueva
     const foto = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
     const actaNueva = (inspeccionId: string, id = randomUUID()) => ({
       id,
@@ -306,11 +306,19 @@ describe('Caso de uso mínimo (e2e)', () => {
         1,
         otroInspector.auth0Id,
       ).expect(201);
-      await enviar(
-        actaNueva(inspeccionRechazada.id),
+    });
+
+    it('numera según el año de fechaEmision en hora argentina, con un correlativo por año', async () => {
+      // 2026-01-01 02:30 UTC is still 2025-12-31 23:30 in Argentina.
+      const res = await enviar(
+        {
+          ...actaNueva(inspeccionRechazada.id),
+          fechaEmision: '2026-01-01T02:30:00.000Z',
+        },
         1,
         otroInspector.auth0Id,
       ).expect(201);
+      expect(res.body.numero).toBe('2025-00001');
     });
   });
 

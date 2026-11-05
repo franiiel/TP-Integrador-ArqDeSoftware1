@@ -80,7 +80,14 @@ export class ActasService {
 
     try {
       const acta = await this.dataSource.transaction(async (manager) => {
-        const anio = new Date().getFullYear();
+        // The number belongs to the year of the legal date, in the municipality's
+        // time zone: an acta drawn up on Dec 31 at 23:30 is numbered in that year.
+        const anio = Number(
+          new Intl.DateTimeFormat('es-AR', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            year: 'numeric',
+          }).format(nueva.fechaEmision),
+        );
         // The upsert locks the year's row until commit: numbers can't repeat or skip.
         const [{ ultimo_numero }] = (await manager.query(
           `INSERT INTO numeradores_acta (anio, ultimo_numero) VALUES ($1, 1)
