@@ -2,11 +2,9 @@ classDiagram
     direction TB
 
     class Usuario {
-        <<abstract>>
-        +String idAuth0
+        +UUID id
         +String nombre
         +String email
-        +Rol rol
     }
     class Inspector {
         +String cargo
@@ -19,89 +17,45 @@ classDiagram
     class Administrativo
 
     class Obra {
+        +UUID id
         +String direccion
         +String propietario
-        +String profesionalResponsable
+        +String responsable
     }
     class Expediente {
-        +String numero
+        +int identificadorExterno
     }
     class Inspeccion {
-        +Date fechaProgramada
+        +UUID id
+        +Date fecha
+        +String ubicacion
     }
     class Acta {
-        +String numero
-        +DateTime fechaHoraLabrado
-        +DateTime fechaHoraRecepcion
-        +Ubicacion ubicacion [0..1]
+        +UUID id
+        +DateTime fechaEmision
         +String observaciones
-        +String organismoDescargo
-        +Plazo plazoDescargo
-        +EstadoActa estado
+        +TipoMedida tipoMedida
+        +List~RefArchivo~ fotos
+        +TipoRelacion tipoActa
     }
-    class ItemControl {
-        +String descripcion
-    }
-    class ResultadoItem {
-        +ResultadoControl resultado
-    }
-    class Fotografia {
-        +String referenciaArchivo
-        +DateTime fechaCaptura
-    }
-    class Notificado {
-        +String nombre
-        +String dni
-        +Boolean firmo
-    }
-    class Medida {
-        <<abstract>>
-        +String falta
-    }
-    class Intimacion {
-        +String conductaACorregir
-        +Plazo plazo
-    }
-    class Clausura {
-        +TipoClausura tipo
-        +String sectorClausurado
-        +String numeroFaja
-    }
-    class ArticuloNormativo {
-        +String ordenanza
-        +String numeroArticulo
-        +String descripcion
-    }
-    class ActaAnulacion {
-        +DateTime fecha
-        +String motivo
-    }
-    class Revision {
-        +DateTime fecha
+    class Notificacion {
+        +UUID id
+        +Date fechaEmision
+        +String destinatario
+        +String medio
     }
 
     Usuario <|-- Inspector
     Usuario <|-- Supervisor
     Usuario <|-- Administrativo
-    Medida <|-- Intimacion
-    Medida <|-- Clausura
 
-    Obra "1" -- "1" Expediente : tiene
-    Expediente "1" -- "0..*" Inspeccion : contiene
+    Inspector "1" -- "0..*" Inspeccion : responsable
     Supervisor "1" -- "0..*" Inspeccion : asigna
-    Inspector "1" -- "0..*" Inspeccion : responsable de
+    Obra "1" -- "0..*" Inspeccion : recibe
+    Obra "1" -- "1" Expediente : tiene
     Inspeccion "1" -- "1" Acta : genera
-    Inspector "1" -- "0..*" Acta : labra
-
-    Acta "1" *-- "0..*" Medida
-    Acta "1" *-- "1..*" ResultadoItem
-    ResultadoItem "0..*" --> "1" ItemControl
-    Acta "1" *-- "1..10" Fotografia
-    Medida "0..*" --> "1" ArticuloNormativo : se basa en
-
-    Acta "0..1" --> "0..1" Acta : rectifica
-    ActaAnulacion "0..1" --> "1" Acta : anula
-    Supervisor "1" -- "0..*" ActaAnulacion : emite
-    Acta "1" -- "0..*" Revision : revisada en
-    Supervisor "1" -- "0..*" Revision : registra
-    Acta "1" *-- "1" Notificado
+    Expediente "1" -- "0..*" Acta : contiene
+    Acta "1" -- "0..*" Acta : rectificacion o anulacion
+    Acta "1" -- "1" Notificacion : genera
+    Acta --> TipoMedida
+    Acta --> TipoRelacion
