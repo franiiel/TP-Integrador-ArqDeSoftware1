@@ -1,0 +1,8 @@
+{
+  "name": "simulador-soap",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node simulador.ts"
+  }
+}

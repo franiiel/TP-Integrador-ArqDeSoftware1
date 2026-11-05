@@ -105,7 +105,9 @@ Una sola aplicación NestJS, un solo proceso, una sola base de datos, organizada
 Reglas entre módulos (ADR-04):
 - Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`).
 - Cada módulo es dueño de sus tablas: otro módulo no usa sus repositorios ni consulta sus tablas directamente.
-- **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML.
+- **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML. Es la **capa anticorrupción** frente al sistema de expedientes: traduce el acta del dominio al formato SOAP y la respuesta a términos del dominio.
+- **La asociación al expediente es en segundo plano.** `POST /api/actas` guarda el acta en `PENDIENTE_ASOCIACION` y responde sin llamar al SOAP. Un proceso periódico dentro del mismo backend toma las actas pendientes, las asocia y las pasa a `ASOCIADA`; si falla, la reintenta en la próxima vuelta. Esa es toda la política de reintentos: sin colas ni tablas de trabajos.
+- **Contrato con el sistema de expedientes:** una única operación SOAP, `AsociarActa`, que recibe identificador del expediente, número de acta, fecha de emisión y tipo de medida (ver `simulador-soap/README.md`). El XML se arma a mano con `fetch`, sin librerías SOAP. Un rechazo de negocio (`soap:Fault`, por ejemplo un expediente inexistente) se registra en el log y el acta queda en `PENDIENTE_ASOCIACION`.
 
 ### Frontend: PWA (ADR-02)
 
@@ -143,7 +145,7 @@ Reglas entre módulos (ADR-04):
 - Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
 - Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
 - La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
-- Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año.
+- Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año. El año es el de `fechaEmision` en hora argentina, no el de la recepción.
 - Cada acta genera exactamente una notificación (fecha de emisión, destinatario y medio). El sistema no le envía nada al destinatario; solo la registra.
 
 ## API
@@ -163,6 +165,12 @@ Reglas entre módulos (ADR-04):
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
 - **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
 
+## Tests y datos semilla
+
+- **Un test e2e del caso de uso** (`backend/test/caso-uso-minimo.e2e-spec.ts`) contra PostgreSQL real, con tokens firmados localmente en lugar de Auth0. Usa la base `inspecciones_test`, que se recrea en cada corrida; nunca la de desarrollo.
+- Tests unitarios solo donde haya lógica que lo justifique, no uno por servicio.
+- **Datos semilla:** `pnpm --filter backend seed` carga un inspector y un supervisor (con los `sub` de Auth0 tomados del `.env`), dos obras con su expediente y dos inspecciones del día.
+
 ## Convenciones de código
 
 - **Idioma:** el dominio en español (`Acta`, `Inspeccion`, `emitirActa`, `fechaEmision`); lo técnico del framework en inglés (`ActasService`, `ActasController`, `actas.module.ts`). Sin tildes ni ñ en identificadores (`Inspeccion`, `numeroAnio`). Comentarios y textos de la interfaz en español.
@@ -174,9 +182,6 @@ Reglas entre módulos (ADR-04):
 
 Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **frená y preguntá** en lugar de asumir:
 
-- Integración SOAP: qué datos se envían, si la asociación es sincrónica o en segundo plano, política de reintentos, manejo de rechazos de negocio, validación del expediente al darlo de alta.
-- Diseño del simulador SOAP.
+- Validación del expediente en el sistema municipal al darlo de alta (el alta de expedientes no se implementa).
 - Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
-- Datos semilla (obras, expedientes, inspecciones de prueba).
-- Estrategia de tests.
 - Licencia del repositorio.

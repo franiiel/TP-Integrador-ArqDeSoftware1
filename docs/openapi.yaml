@@ -271,10 +271,6 @@ components:
             identificadorExterno:
               type: integer
               description: Identificador del expediente en el sistema municipal
-        actaId:
-          type: [string, 'null']
-          format: uuid
-          description: Acta ya emitida para esta inspección, si existe
 
     NotificacionNueva:
       type: object
