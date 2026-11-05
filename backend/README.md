@@ -24,6 +24,14 @@ pnpm migration:run                                       # aplica las migracione
 pnpm migration:revert                                    # revierte la última
 ```
 
+### Datos semilla
+
+```bash
+pnpm seed   # carga 2 usuarios (inspector y supervisor), 2 obras con su expediente y 2 inspecciones del día
+```
+
+Se corre una vez, después de `pnpm migration:run`; si ya hay usuarios cargados, no hace nada (para recargarla, vaciá la base y volvé a correr las migraciones). Los `sub` de Auth0 se leen de `SEED_INSPECTOR_AUTH0_ID` y `SEED_SUPERVISOR_AUTH0_ID` del `.env`.
+
 Los tests e2e levantan la aplicación completa, así que necesitan la base corriendo (`pnpm db:up`).
 
 Módulos previstos (ver `docs/diagramas/c4-componentes-backend.mmd`):
