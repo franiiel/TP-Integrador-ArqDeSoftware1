@@ -1,10 +1,13 @@
 import { execSync } from 'node:child_process';
+import { rm } from 'node:fs/promises';
 import { DataSource, type DataSourceOptions } from 'typeorm';
-import { TEST_DB } from './test-env.js';
+import { TEST_DB, TEST_FOTOS_DIR } from './test-env.js';
 
 // Recreates the test database from the compiled migrations, so every run starts empty.
 // Every connection names TEST_DB explicitly: nothing here depends on POSTGRES_DB.
 export default async function setup() {
+  await rm(TEST_FOTOS_DIR, { recursive: true, force: true });
+
   // TypeORM loads migrations with a plain import(), which can't read .ts with decorators.
   execSync('pnpm build', { stdio: 'inherit' });
   const ruta = '../dist/data-source.js';
