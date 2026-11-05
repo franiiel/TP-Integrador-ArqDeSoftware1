@@ -12,104 +12,57 @@ erDiagram
         uuid id PK
         varchar direccion
         varchar propietario
-        varchar profesional_responsable
+        varchar responsable
     }
     expedientes {
         uuid id PK
-        varchar numero UK
+        int identificador_externo UK
         uuid obra_id FK,UK
     }
     inspecciones {
         uuid id PK
-        uuid expediente_id FK
+        uuid obra_id FK
         uuid inspector_id FK
         uuid supervisor_id FK
-        date fecha_programada
+        date fecha
+        varchar ubicacion "nullable"
     }
     actas {
         uuid id PK "generado en el celular"
         varchar numero UK "ej. 2026-00001"
-        uuid inspeccion_id FK,UK
-        uuid inspector_id FK
-        timestamptz fecha_hora_labrado
+        uuid inspeccion_id FK,UK "nullable: solo actas originales"
+        uuid expediente_id FK
+        timestamptz fecha_emision "fecha legal, del celular"
         timestamptz fecha_hora_recepcion
-        numeric latitud "nullable"
-        numeric longitud "nullable"
         text observaciones
-        varchar organismo_descargo
-        int plazo_descargo_cantidad
-        enum plazo_descargo_unidad
-        varchar notificado_nombre
-        varchar notificado_dni
-        boolean notificado_firmo
-        enum estado
-        uuid acta_rectificada_id FK,UK "nullable"
+        enum tipo_medida "NINGUNA, INTIMACION o CLAUSURA"
+        enum tipo_acta "nullable: RECTIFICACION o ANULACION"
+        uuid acta_original_id FK "nullable"
+        enum estado "PENDIENTE_ASOCIACION o ASOCIADA"
     }
     numeradores_acta {
         int anio PK
         int ultimo_numero
     }
-    items_control {
-        uuid id PK
-        varchar descripcion
-    }
-    resultados_item {
-        uuid acta_id PK,FK
-        uuid item_control_id PK,FK
-        enum resultado
-    }
     fotografias {
         uuid id PK
         uuid acta_id FK
         varchar ruta_archivo
-        timestamptz fecha_captura
     }
-    articulos_normativos {
-        uuid id PK
-        varchar ordenanza
-        varchar numero_articulo
-        text descripcion
-    }
-    medidas {
-        uuid id PK
-        uuid acta_id FK
-        enum tipo "INTIMACION o CLAUSURA"
-        text falta
-        uuid articulo_id FK
-        text conducta_a_corregir "solo intimacion"
-        int plazo_cantidad "solo intimacion"
-        enum plazo_unidad "solo intimacion"
-        enum tipo_clausura "solo clausura"
-        varchar sector_clausurado "solo clausura parcial"
-        varchar numero_faja "solo clausura"
-    }
-    anulaciones {
+    notificaciones {
         uuid id PK
         uuid acta_id FK,UK
-        uuid supervisor_id FK
-        timestamptz fecha
-        text motivo
-    }
-    revisiones {
-        uuid id PK
-        uuid acta_id FK
-        uuid supervisor_id FK
-        timestamptz fecha
+        date fecha_emision
+        varchar destinatario
+        varchar medio
     }
 
     obras ||--|| expedientes : tiene
-    expedientes ||--o{ inspecciones : contiene
-    usuarios ||--o{ inspecciones : "inspector asignado"
+    obras ||--o{ inspecciones : recibe
+    usuarios ||--o{ inspecciones : "inspector responsable"
     usuarios ||--o{ inspecciones : "supervisor asignante"
-    inspecciones ||--|| actas : genera
-    usuarios ||--o{ actas : labra
-    actas |o--o| actas : rectifica
-    actas ||--|{ resultados_item : tiene
-    items_control ||--o{ resultados_item : evaluado_en
+    inspecciones |o--o| actas : genera
+    expedientes ||--o{ actas : contiene
+    actas |o--o{ actas : "rectificacion o anulacion"
     actas ||--|{ fotografias : tiene
-    actas ||--o{ medidas : dispone
-    articulos_normativos ||--o{ medidas : fundamenta
-    actas ||--o| anulaciones : anulada_por
-    usuarios ||--o{ anulaciones : emite
-    actas ||--o{ revisiones : revisada_en
-    usuarios ||--o{ revisiones : registra
+    actas ||--|| notificaciones : genera

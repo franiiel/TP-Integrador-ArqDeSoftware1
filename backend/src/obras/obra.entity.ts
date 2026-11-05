@@ -12,5 +12,5 @@ export class Obra {
   propietario: string;
 
   @Column({ type: 'varchar' })
-  profesionalResponsable: string;
+  responsable: string;
 }

@@ -1,42 +1,13 @@
 classDiagram
     direction TB
-    class Plazo {
-        <<valueobject>>
-        +int cantidad
-        +UnidadPlazo unidad
-    }
-    class Ubicacion {
-        <<valueobject>>
-        +Decimal latitud
-        +Decimal longitud
-    }
-    class Rol {
+    class TipoMedida {
         <<enumeration>>
-        INSPECTOR
-        SUPERVISOR
-        ADMINISTRATIVO
+        NINGUNA
+        INTIMACION
+        CLAUSURA
     }
-    class EstadoActa {
+    class TipoRelacion {
         <<enumeration>>
-        PENDIENTE_ASOCIACION
-        ASOCIADA
-        RECTIFICADA
-        ANULADA
+        RECTIFICACION
+        ANULACION
     }
-    class ResultadoControl {
-        <<enumeration>>
-        CUMPLE
-        NO_CUMPLE
-        NO_APLICA
-    }
-    class TipoClausura {
-        <<enumeration>>
-        TOTAL
-        PARCIAL
-    }
-    class UnidadPlazo {
-        <<enumeration>>
-        HORAS
-        DIAS_HABILES
-    }
-

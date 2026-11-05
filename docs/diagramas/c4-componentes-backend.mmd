@@ -10,8 +10,7 @@ flowchart TB
         usuarios["<b>usuarios</b><br/>Datos propios del usuario:<br/>cargo y legajo"]
         obras["<b>obras</b><br/>Obras y expedientes"]
         inspecciones["<b>inspecciones</b><br/>Asignación y consulta<br/>de inspecciones"]
-        actas["<b>actas</b><br/>Recepción, numeración, medidas,<br/>fotos, revisión y anulación"]
-        catalogos["<b>catalogos</b><br/>Ítems de control y<br/>artículos normativos"]
+        actas["<b>actas</b><br/>Recepción, numeración, fotos,<br/>notificación, rectificación y anulación"]
         integracion["<b>integracion-expedientes</b><br/>Adaptador SOAP:<br/>asociación de actas y reintentos"]
         auditoria["<b>auditoria</b><br/>Registro de acciones<br/>sobre las actas"]
     end
@@ -22,10 +21,8 @@ flowchart TB
     auth --> inspecciones
     auth --> actas
     auth --> obras
-    auth --> catalogos
 
     actas --> inspecciones
-    actas --> catalogos
     actas --> integracion
     actas --> auditoria
     inspecciones --> obras
@@ -39,5 +36,5 @@ flowchart TB
     classDef comp fill:#85bbf0,stroke:#5d82a8,color:#000
     class auth0,soap ext
     class pwa,db cont
-    class auth,usuarios,obras,inspecciones,actas,catalogos,integracion,auditoria comp
+    class auth,usuarios,obras,inspecciones,actas,integracion,auditoria comp
     style backend fill:#f4f8fd,stroke:#0b4884,stroke-dasharray: 5 5

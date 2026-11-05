@@ -12,8 +12,9 @@ export class Expediente {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', unique: true })
-  numero: string;
+  // Id of the expediente in the municipal system; the rest is fetched via SOAP.
+  @Column({ type: 'int', unique: true })
+  identificadorExterno: number;
 
   @Column({ type: 'uuid' })
   obraId: string;

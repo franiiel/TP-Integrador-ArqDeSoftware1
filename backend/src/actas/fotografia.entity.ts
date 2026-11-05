@@ -21,7 +21,4 @@ export class Fotografia {
 
   @Column({ type: 'varchar' })
   rutaArchivo: string;
-
-  @Column({ type: 'timestamptz' })
-  fechaCaptura: Date;
 }

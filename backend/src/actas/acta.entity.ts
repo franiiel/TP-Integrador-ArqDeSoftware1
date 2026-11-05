@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -9,19 +10,33 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Inspeccion } from '../inspecciones/inspeccion.entity.js';
-import { Usuario } from '../usuarios/usuario.entity.js';
+import { Expediente } from '../obras/expediente.entity.js';
 import { Fotografia } from './fotografia.entity.js';
-import { Medida } from './medida.entity.js';
-import { ResultadoItem } from './resultado-item.entity.js';
-import { UnidadPlazo } from './unidad-plazo.enum.js';
+import { Notificacion } from './notificacion.entity.js';
 
 export enum EstadoActa {
   PENDIENTE_ASOCIACION = 'PENDIENTE_ASOCIACION',
   ASOCIADA = 'ASOCIADA',
-  RECTIFICADA = 'RECTIFICADA',
-  ANULADA = 'ANULADA',
 }
 
+export enum TipoMedida {
+  NINGUNA = 'NINGUNA',
+  INTIMACION = 'INTIMACION',
+  CLAUSURA = 'CLAUSURA',
+}
+
+export enum TipoRelacion {
+  RECTIFICACION = 'RECTIFICACION',
+  ANULACION = 'ANULACION',
+}
+
+// An original acta comes from an inspeccion; a rectification or annulment
+// comes from a previous acta instead.
+@Check(
+  'ck_actas_origen',
+  `(tipo_acta IS NULL) = (acta_original_id IS NULL)
+  AND (tipo_acta IS NULL) = (inspeccion_id IS NOT NULL)`,
+)
 @Entity('actas')
 export class Acta {
   // Generated on the phone: makes resending the same acta idempotent.
@@ -31,53 +46,42 @@ export class Acta {
   @Column({ type: 'varchar', unique: true })
   numero: string;
 
-  @Column({ type: 'uuid' })
-  inspeccionId: string;
+  @Column({ type: 'uuid', nullable: true })
+  inspeccionId: string | null;
 
   @OneToOne(() => Inspeccion)
   @JoinColumn({ name: 'inspeccion_id' })
-  inspeccion: Inspeccion;
+  inspeccion: Inspeccion | null;
 
   @Column({ type: 'uuid' })
-  inspectorId: string;
+  expedienteId: string;
 
-  @ManyToOne(() => Usuario)
-  @JoinColumn({ name: 'inspector_id' })
-  inspector: Usuario;
+  @ManyToOne(() => Expediente)
+  @JoinColumn({ name: 'expediente_id' })
+  expediente: Expediente;
 
+  // Legal date: taken from the phone when the acta is drawn up.
   @Column({ type: 'timestamptz' })
-  fechaHoraLabrado: Date;
+  fechaEmision: Date;
 
   @CreateDateColumn({ type: 'timestamptz' })
   fechaHoraRecepcion: Date;
 
-  // pg returns numeric as string to avoid losing precision.
-  @Column({ type: 'numeric', precision: 9, scale: 6, nullable: true })
-  latitud: string | null;
-
-  @Column({ type: 'numeric', precision: 9, scale: 6, nullable: true })
-  longitud: string | null;
-
   @Column({ type: 'text' })
   observaciones: string;
 
-  @Column({ type: 'varchar' })
-  organismoDescargo: string;
+  @Column({ type: 'enum', enum: TipoMedida })
+  tipoMedida: TipoMedida;
 
-  @Column({ type: 'int' })
-  plazoDescargoCantidad: number;
+  @Column({ type: 'enum', enum: TipoRelacion, nullable: true })
+  tipoActa: TipoRelacion | null;
 
-  @Column({ type: 'enum', enum: UnidadPlazo })
-  plazoDescargoUnidad: UnidadPlazo;
+  @Column({ type: 'uuid', nullable: true })
+  actaOriginalId: string | null;
 
-  @Column({ type: 'varchar' })
-  notificadoNombre: string;
-
-  @Column({ type: 'varchar' })
-  notificadoDni: string;
-
-  @Column({ type: 'boolean' })
-  notificadoFirmo: boolean;
+  @ManyToOne(() => Acta)
+  @JoinColumn({ name: 'acta_original_id' })
+  actaOriginal: Acta | null;
 
   @Column({
     type: 'enum',
@@ -86,14 +90,11 @@ export class Acta {
   })
   estado: EstadoActa;
 
-  @OneToMany(() => ResultadoItem, (resultado) => resultado.acta, {
-    cascade: ['insert'],
-  })
-  resultadosItems: ResultadoItem[];
-
   @OneToMany(() => Fotografia, (foto) => foto.acta, { cascade: ['insert'] })
   fotografias: Fotografia[];
 
-  @OneToMany(() => Medida, (medida) => medida.acta, { cascade: ['insert'] })
-  medidas: Medida[];
+  @OneToOne(() => Notificacion, (notificacion) => notificacion.acta, {
+    cascade: ['insert'],
+  })
+  notificacion: Notificacion;
 }

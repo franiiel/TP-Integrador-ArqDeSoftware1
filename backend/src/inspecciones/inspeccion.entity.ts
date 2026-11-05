@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Expediente } from '../obras/expediente.entity.js';
+import { Obra } from '../obras/obra.entity.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 
 @Entity('inspecciones')
@@ -14,11 +14,11 @@ export class Inspeccion {
   id: string;
 
   @Column({ type: 'uuid' })
-  expedienteId: string;
+  obraId: string;
 
-  @ManyToOne(() => Expediente)
-  @JoinColumn({ name: 'expediente_id' })
-  expediente: Expediente;
+  @ManyToOne(() => Obra)
+  @JoinColumn({ name: 'obra_id' })
+  obra: Obra;
 
   @Column({ type: 'uuid' })
   inspectorId: string;
@@ -35,5 +35,9 @@ export class Inspeccion {
   supervisor: Usuario;
 
   @Column({ type: 'date' })
-  fechaProgramada: string;
+  fecha: string;
+
+  // Captured on the phone when the acta is drawn up; optional.
+  @Column({ type: 'varchar', nullable: true })
+  ubicacion: string | null;
 }

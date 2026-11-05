@@ -34,7 +34,7 @@ El objetivo del código es **demostrar las decisiones de arquitectura**, no cubr
 
 - Login con Auth0 (Google) y control de acceso por rol.
 - Lista de las inspecciones asignadas al inspector.
-- Formulario del acta: ítems de control, observaciones, fotos con la cámara, ubicación opcional, notificado y medidas.
+- Formulario del acta: observaciones, fotos con la cámara, ubicación opcional, tipo de medida y notificación.
 - Guardado offline en el celular y reenvío automático al recuperar la señal (es la restricción central del escenario).
 - Recepción idempotente del acta en el backend y numeración correlativa por año.
 - Asociación al expediente a través del simulador SOAP.
@@ -98,8 +98,7 @@ Una sola aplicación NestJS, un solo proceso, una sola base de datos, organizada
 | `usuarios` | Cargo y legajo, vinculados al `sub` de Auth0 |
 | `obras` | Obras y expedientes |
 | `inspecciones` | Asignación y consulta de inspecciones |
-| `actas` | Recepción, numeración, medidas, fotos, revisión, anulación |
-| `catalogos` | Ítems de control y artículos normativos (solo lectura) |
+| `actas` | Recepción, numeración, fotos, notificación, revisión, rectificación y anulación |
 | `integracion-expedientes` | Adaptador SOAP: asociación de actas y reintentos |
 | `auditoria` | Registro de acciones sobre las actas |
 
@@ -136,15 +135,16 @@ Reglas entre módulos (ADR-04):
 
 - **Un acta emitida es inmutable.** No se actualiza ni se borra su contenido. Lo único que cambia es su `estado`.
 - Un acta se considera **emitida cuando el servidor la recibe**.
-- La **fecha legal** del acta es `fechaHoraLabrado` (del celular). El servidor guarda además `fechaHoraRecepcion`.
-- Estados del acta: `PENDIENTE_ASOCIACION` → `ASOCIADA`; luego puede pasar a `RECTIFICADA` o `ANULADA`.
-- Solo se puede rectificar o anular un acta `ASOCIADA`, y solo lo hace el supervisor.
+- La **fecha legal** del acta es `fechaEmision` (del celular, al labrarla). El servidor guarda además `fechaHoraRecepcion`.
+- Estados del acta (asociación al expediente): `PENDIENTE_ASOCIACION` → `ASOCIADA`.
+- **Rectificar o anular es emitir otra acta** con `tipoActa` `RECTIFICACION` o `ANULACION` que referencia a la anterior (`actaOriginalId`); la anterior no cambia. Solo se rectifica o anula un acta `ASOCIADA`, y solo lo hace el supervisor.
+- Un acta original viene de una inspección y no tiene `tipoActa`; una rectificación o anulación no tiene inspección (lo garantiza el `CHECK` `ck_actas_origen`).
 - **Solo el inspector carga actas**, y solo de las inspecciones asignadas a él.
-- Cada inspección genera exactamente un acta.
-- Un acta tiene entre **1 y 10 fotos**, un resultado por cada ítem de control y cero o más medidas.
-- Una medida es **intimación** (falta, conducta a corregir, plazo, artículo) o **clausura** (falta, tipo total/parcial, sector si es parcial, número de faja, artículo). Un acta puede tener ambas.
+- Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
+- Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
+- La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
 - Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año.
-- El notificado no recibe nada del sistema; solo se registran nombre, DNI y si firmó.
+- Cada acta genera exactamente una notificación (fecha de emisión, destinatario y medio). El sistema no le envía nada al destinatario; solo la registra.
 
 ## API
 
@@ -159,13 +159,13 @@ Reglas entre módulos (ADR-04):
 - PostgreSQL con TypeORM. **Identificadores UUID** en todas las tablas.
 - Nombres de tablas y columnas en `snake_case`.
 - El modelo está en `docs/diagramas/modelo-datos.mmd`.
-- Una sola tabla `usuarios` (rol como columna) y una sola tabla `medidas` (tipo como columna, con restricciones `CHECK` por tipo).
+- Una sola tabla `usuarios` (rol como columna). La medida es la columna `tipo_medida` de `actas`, y una rectificación o anulación es otra fila de `actas` (`tipo_acta`, `acta_original_id`).
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
 - **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
 
 ## Convenciones de código
 
-- **Idioma:** el dominio en español (`Acta`, `Inspeccion`, `emitirActa`, `fechaHoraLabrado`); lo técnico del framework en inglés (`ActasService`, `ActasController`, `actas.module.ts`). Sin tildes ni ñ en identificadores (`Inspeccion`, `numeroAnio`). Comentarios y textos de la interfaz en español.
+- **Idioma:** el dominio en español (`Acta`, `Inspeccion`, `emitirActa`, `fechaEmision`); lo técnico del framework en inglés (`ActasService`, `ActasController`, `actas.module.ts`). Sin tildes ni ñ en identificadores (`Inspeccion`, `numeroAnio`). Comentarios y textos de la interfaz en español.
 - TypeScript estricto en frontend y backend.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/es/) en español, por ejemplo `feat(actas): recepción idempotente de actas` o `docs: agrega ADR de despliegue`.
 - **Nunca subas secretos.** Toda configuración sensible va en `.env` (ignorado por git); documentá cada variable nueva en `.env.example`.
@@ -177,6 +177,6 @@ Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **fr
 - Integración SOAP: qué datos se envían, si la asociación es sincrónica o en segundo plano, política de reintentos, manejo de rechazos de negocio, validación del expediente al darlo de alta.
 - Diseño del simulador SOAP.
 - Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
-- Datos semilla (obras, expedientes, inspecciones y catálogos de prueba).
+- Datos semilla (obras, expedientes, inspecciones de prueba).
 - Estrategia de tests.
 - Licencia del repositorio.
