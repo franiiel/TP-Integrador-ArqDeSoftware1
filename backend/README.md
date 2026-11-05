@@ -54,6 +54,10 @@ Además, cada usuario tiene que existir en la tabla `usuarios` con su `sub` de A
 
 Se guardan en la carpeta `FOTOS_DIR` (por defecto `uploads/fotos` en la raíz del repositorio, ignorada por git), una subcarpeta por acta. La tabla `fotografias` guarda solo la ruta.
 
+### Asociación al expediente
+
+`AsociacionActasService` (módulo `actas`) toma cada `ASOCIACION_INTERVALO_MS` (por defecto 60000; `0` lo apaga) las actas en `PENDIENTE_ASOCIACION` y las asocia a través de `integracion-expedientes`, la capa anticorrupción y único módulo que conoce SOAP. Lo que falla queda pendiente y se reintenta en la vuelta siguiente. El sistema de expedientes se configura con `EXPEDIENTES_SOAP_URL`; en desarrollo, levantar el simulador con `pnpm --filter simulador-soap start`.
+
 ### Datos semilla
 
 ```bash

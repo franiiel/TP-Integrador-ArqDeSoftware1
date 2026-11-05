@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
+import type { Server } from 'node:http';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
@@ -7,6 +9,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { Acta } from '../src/actas/acta.entity.js';
+import { AsociacionActasService } from '../src/actas/asociacion-actas.service.js';
 import { Fotografia } from '../src/actas/fotografia.entity.js';
 import { Notificacion } from '../src/actas/notificacion.entity.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
@@ -14,6 +17,7 @@ import { Inspeccion } from '../src/inspecciones/inspeccion.entity.js';
 import { Expediente } from '../src/obras/expediente.entity.js';
 import { Obra } from '../src/obras/obra.entity.js';
 import { Rol, Usuario } from '../src/usuarios/usuario.entity.js';
+import { crearSimulador } from '../../simulador-soap/simulador.js';
 import { TEST_DB, TEST_FOTOS_DIR } from './test-env.js';
 
 describe('Caso de uso mínimo (e2e)', () => {
@@ -25,6 +29,7 @@ describe('Caso de uso mínimo (e2e)', () => {
   let inspeccionPropia: Inspeccion;
   let inspeccionPropia2: Inspeccion;
   let inspeccionAjena: Inspeccion;
+  let inspeccionRechazada: Inspeccion;
 
   beforeAll(async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256');
@@ -82,7 +87,7 @@ describe('Caso de uso mínimo (e2e)', () => {
       ]);
 
     const obras = await db.getRepository(Obra).save(
-      [1, 2, 3].map((n) => ({
+      [1, 2, 3, 4].map((n) => ({
         direccion: `Calle ${n}`,
         propietario: `Propietario ${n}`,
         responsable: `Responsable ${n}`,
@@ -90,21 +95,27 @@ describe('Caso de uso mínimo (e2e)', () => {
     );
     await db.getRepository(Expediente).save(
       obras.map((obra, i) => ({
-        identificadorExterno: 1001 + i,
+        // 9999 doesn't exist in the simulated municipal system.
+        identificadorExterno: i === 3 ? 9999 : 1001 + i,
         obraId: obra.id,
       })),
     );
-    [inspeccionPropia, inspeccionPropia2, inspeccionAjena] = await db
-      .getRepository(Inspeccion)
-      .save(
-        [inspector, inspector, otroInspector].map((asignado, i) => ({
+    [
+      inspeccionPropia,
+      inspeccionPropia2,
+      inspeccionAjena,
+      inspeccionRechazada,
+    ] = await db.getRepository(Inspeccion).save(
+      [inspector, inspector, otroInspector, otroInspector].map(
+        (asignado, i) => ({
           obraId: obras[i].id,
           inspectorId: asignado.id,
           supervisorId: supervisor.id,
           fecha: `2026-11-0${i + 1}`,
           ubicacion: null,
-        })),
-      );
+        }),
+      ),
+    );
   });
 
   afterAll(() => app.close());
@@ -295,6 +306,41 @@ describe('Caso de uso mínimo (e2e)', () => {
         1,
         otroInspector.auth0Id,
       ).expect(201);
+      await enviar(
+        actaNueva(inspeccionRechazada.id),
+        1,
+        otroInspector.auth0Id,
+      ).expect(201);
+    });
+  });
+
+  describe('asociación al expediente en segundo plano', () => {
+    const estados = async () => {
+      const actas = await app.get(DataSource).getRepository(Acta).find();
+      return Object.fromEntries(actas.map((a) => [a.inspeccionId, a.estado]));
+    };
+    let simulador: Server;
+    afterAll(() => simulador?.close());
+
+    it('si el sistema de expedientes no responde, las actas quedan pendientes', async () => {
+      await app.get(AsociacionActasService).asociarPendientes();
+      expect(Object.values(await estados())).toEqual(
+        Array(4).fill('PENDIENTE_ASOCIACION'),
+      );
+    });
+
+    it('asocia las pendientes y deja pendiente la de un expediente rechazado', async () => {
+      simulador = crearSimulador().listen(
+        Number(new URL(process.env.EXPEDIENTES_SOAP_URL!).port),
+      );
+      await once(simulador, 'listening');
+      await app.get(AsociacionActasService).asociarPendientes();
+      expect(await estados()).toEqual({
+        [inspeccionPropia.id]: 'ASOCIADA',
+        [inspeccionPropia2.id]: 'ASOCIADA',
+        [inspeccionAjena.id]: 'ASOCIADA',
+        [inspeccionRechazada.id]: 'PENDIENTE_ASOCIACION',
+      });
     });
   });
 
@@ -311,7 +357,7 @@ describe('Caso de uso mínimo (e2e)', () => {
       expect(res.body).toMatchObject({
         id: acta.id,
         numero: acta.numero,
-        estado: 'PENDIENTE_ASOCIACION',
+        estado: 'ASOCIADA',
       });
     });
 

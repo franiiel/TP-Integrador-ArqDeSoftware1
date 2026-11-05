@@ -13,4 +13,7 @@ export const testEnv = {
   FOTOS_DIR: TEST_FOTOS_DIR,
   AUTH0_DOMAIN: 'test.auth0.local',
   AUTH0_AUDIENCE: 'https://inspecciones-obra/api',
+  // The tests start the simulator themselves and run each round by hand.
+  EXPEDIENTES_SOAP_URL: 'http://localhost:8095/expedientes',
+  ASOCIACION_INTERVALO_MS: '0',
 };

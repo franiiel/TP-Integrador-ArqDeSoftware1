@@ -107,6 +107,7 @@ Reglas entre módulos (ADR-04):
 - Cada módulo es dueño de sus tablas: otro módulo no usa sus repositorios ni consulta sus tablas directamente.
 - **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML. Es la **capa anticorrupción** frente al sistema de expedientes: traduce el acta del dominio al formato SOAP y la respuesta a términos del dominio.
 - **La asociación al expediente es en segundo plano.** `POST /api/actas` guarda el acta en `PENDIENTE_ASOCIACION` y responde sin llamar al SOAP. Un proceso periódico dentro del mismo backend toma las actas pendientes, las asocia y las pasa a `ASOCIADA`; si falla, la reintenta en la próxima vuelta. Esa es toda la política de reintentos: sin colas ni tablas de trabajos.
+- **Contrato con el sistema de expedientes:** una única operación SOAP, `AsociarActa`, que recibe identificador del expediente, número de acta, fecha de emisión y tipo de medida (ver `simulador-soap/README.md`). El XML se arma a mano con `fetch`, sin librerías SOAP. Un rechazo de negocio (`soap:Fault`, por ejemplo un expediente inexistente) se registra en el log y el acta queda en `PENDIENTE_ASOCIACION`.
 
 ### Frontend: PWA (ADR-02)
 
@@ -181,7 +182,6 @@ Reglas entre módulos (ADR-04):
 
 Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **frená y preguntá** en lugar de asumir:
 
-- Integración SOAP: qué datos se envían, manejo de rechazos de negocio, validación del expediente al darlo de alta.
-- Diseño del simulador SOAP.
+- Validación del expediente en el sistema municipal al darlo de alta (el alta de expedientes no se implementa).
 - Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
 - Licencia del repositorio.

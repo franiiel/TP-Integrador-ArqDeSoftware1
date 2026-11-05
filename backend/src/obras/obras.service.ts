@@ -18,6 +18,10 @@ export class ObrasService {
     });
   }
 
+  buscarExpedientes(ids: string[]) {
+    return this.expedientes.findBy({ id: In(ids) });
+  }
+
   buscarExpedienteDeObra(obraId: string) {
     return this.expedientes.findOneByOrFail({ obraId });
   }
