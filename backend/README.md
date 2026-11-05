@@ -24,6 +24,36 @@ pnpm migration:run                                       # aplica las migracione
 pnpm migration:revert                                    # revierte la última
 ```
 
+### Auth0
+
+El backend valida el token contra la JWKS del tenant (`AUTH0_DOMAIN`) y verifica emisor y audiencia (`AUTH0_AUDIENCE`). Los roles viajan en el claim `https://inspecciones-obra/roles`. Configuración del tenant `inspecciones-obras.us.auth0.com`:
+
+1. **API** (*Applications → APIs*): identifier `https://inspecciones-obra/api`, RS256. *User access*: Allow; *Client access*: Deny.
+2. **Aplicación** (*Applications → Applications*, tipo *Single Page Web Applications*), en *Settings*:
+   - *Allowed Callback URLs*, *Allowed Logout URLs* y *Allowed Web Origins*: `http://localhost:4200`.
+   - *Refresh Token Rotation*: activado.
+3. **Google** (*Authentication → Social → google-oauth2*): habilitado para la aplicación.
+4. **Roles** (*User Management → Roles*): crear `INSPECTOR`, `SUPERVISOR` y `ADMINISTRATIVO`, y asignar el que corresponda a cada usuario.
+5. **Action** (*Actions → Library → Create Action*, trigger *Login / Post Login*), desplegarla y agregarla al flujo *Login*:
+
+   ```js
+   // Agrega los roles al token de acceso y rechaza a quien no tenga ninguno (ADR-01).
+   exports.onExecutePostLogin = async (event, api) => {
+     const roles = event.authorization?.roles ?? [];
+     if (roles.length === 0) {
+       api.access.deny('El usuario no tiene un rol asignado.');
+       return;
+     }
+     api.accessToken.setCustomClaim('https://inspecciones-obra/roles', roles);
+   };
+   ```
+
+Además, cada usuario tiene que existir en la tabla `usuarios` con su `sub` de Auth0 en `auth0_id` (ver datos semilla); si no, el backend responde 403.
+
+### Fotos de las actas
+
+Se guardan en la carpeta `FOTOS_DIR` (por defecto `uploads/fotos` en la raíz del repositorio, ignorada por git), una subcarpeta por acta. La tabla `fotografias` guarda solo la ruta.
+
 ### Datos semilla
 
 ```bash
