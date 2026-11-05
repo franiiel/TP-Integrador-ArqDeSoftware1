@@ -164,6 +164,12 @@ Reglas entre módulos (ADR-04):
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
 - **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
 
+## Tests y datos semilla
+
+- **Un test e2e del caso de uso** (`backend/test/caso-uso-minimo.e2e-spec.ts`) contra PostgreSQL real, con tokens firmados localmente en lugar de Auth0. Usa la base `inspecciones_test`, que se recrea en cada corrida; nunca la de desarrollo.
+- Tests unitarios solo donde haya lógica que lo justifique, no uno por servicio.
+- **Datos semilla:** `pnpm --filter backend seed` carga un inspector y un supervisor (con los `sub` de Auth0 tomados del `.env`), dos obras con su expediente y dos inspecciones del día.
+
 ## Convenciones de código
 
 - **Idioma:** el dominio en español (`Acta`, `Inspeccion`, `emitirActa`, `fechaEmision`); lo técnico del framework en inglés (`ActasService`, `ActasController`, `actas.module.ts`). Sin tildes ni ñ en identificadores (`Inspeccion`, `numeroAnio`). Comentarios y textos de la interfaz en español.
@@ -178,6 +184,4 @@ Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **fr
 - Integración SOAP: qué datos se envían, manejo de rechazos de negocio, validación del expediente al darlo de alta.
 - Diseño del simulador SOAP.
 - Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
-- Datos semilla (obras, expedientes, inspecciones de prueba).
-- Estrategia de tests.
 - Licencia del repositorio.
