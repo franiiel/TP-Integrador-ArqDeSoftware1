@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module.js';
 import { dataSourceOptions } from './data-source.js';
+import { InspeccionesModule } from './inspecciones/inspecciones.module.js';
 import { UsuariosModule } from './usuarios/usuarios.module.js';
 
 @Module({
@@ -15,6 +16,7 @@ import { UsuariosModule } from './usuarios/usuarios.module.js';
     }),
     AuthModule,
     UsuariosModule,
+    InspeccionesModule,
   ],
 })
 export class AppModule {}

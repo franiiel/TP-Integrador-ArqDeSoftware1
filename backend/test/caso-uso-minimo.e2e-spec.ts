@@ -5,6 +5,9 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
+import { Inspeccion } from '../src/inspecciones/inspeccion.entity.js';
+import { Expediente } from '../src/obras/expediente.entity.js';
+import { Obra } from '../src/obras/obra.entity.js';
 import { Rol, Usuario } from '../src/usuarios/usuario.entity.js';
 import { TEST_DB } from './test-env.js';
 
@@ -12,6 +15,11 @@ describe('Caso de uso mínimo (e2e)', () => {
   let app: INestApplication;
   let firmar: (sub: string, roles: Rol[], issuer?: string) => Promise<string>;
   let inspector: Usuario;
+  let otroInspector: Usuario;
+  let supervisor: Usuario;
+  let inspeccionPropia: Inspeccion;
+  let inspeccionPropia2: Inspeccion;
+  let inspeccionAjena: Inspeccion;
 
   beforeAll(async () => {
     const { publicKey, privateKey } = await generateKeyPair('RS256');
@@ -35,16 +43,65 @@ describe('Caso de uso mínimo (e2e)', () => {
 
     const db = app.get(DataSource);
     if (db.options.database !== TEST_DB) {
-      throw new Error(`La app de test apunta a "${db.options.database}"`);
+      throw new Error(
+        `La app de test apunta a "${String(db.options.database)}"`,
+      );
     }
-    inspector = await db.getRepository(Usuario).save({
-      auth0Id: 'google-oauth2|inspector',
-      nombre: 'Ana Inspectora',
-      email: 'ana@example.com',
-      rol: Rol.INSPECTOR,
-      cargo: 'Inspectora',
-      legajo: '1001',
-    });
+    [inspector, otroInspector, supervisor] = await db
+      .getRepository(Usuario)
+      .save([
+        {
+          auth0Id: 'google-oauth2|inspector',
+          nombre: 'Ana Inspectora',
+          email: 'ana@example.com',
+          rol: Rol.INSPECTOR,
+          cargo: 'Inspectora',
+          legajo: '1001',
+        },
+        {
+          auth0Id: 'google-oauth2|otro',
+          nombre: 'Otro Inspector',
+          email: 'otro@example.com',
+          rol: Rol.INSPECTOR,
+          cargo: 'Inspector',
+          legajo: '1002',
+        },
+        {
+          auth0Id: 'google-oauth2|supervisor',
+          nombre: 'Sara Supervisora',
+          email: 'sara@example.com',
+          rol: Rol.SUPERVISOR,
+          cargo: 'Supervisora',
+          legajo: '2001',
+        },
+      ]);
+
+    const obras = await db.getRepository(Obra).save(
+      [1, 2, 3].map((n) => ({
+        direccion: `Calle ${n}`,
+        propietario: `Propietario ${n}`,
+        responsable: `Responsable ${n}`,
+      })),
+    );
+    await db
+      .getRepository(Expediente)
+      .save(
+        obras.map((obra, i) => ({
+          identificadorExterno: 1001 + i,
+          obraId: obra.id,
+        })),
+      );
+    [inspeccionPropia, inspeccionPropia2, inspeccionAjena] = await db
+      .getRepository(Inspeccion)
+      .save(
+        [inspector, inspector, otroInspector].map((asignado, i) => ({
+          obraId: obras[i].id,
+          inspectorId: asignado.id,
+          supervisorId: supervisor.id,
+          fecha: `2026-11-0${i + 1}`,
+          ubicacion: null,
+        })),
+      );
   });
 
   afterAll(() => app.close());
@@ -83,5 +140,47 @@ describe('Caso de uso mínimo (e2e)', () => {
         legajo: '1001',
       });
     });
+  });
+
+  describe('GET /api/inspecciones', () => {
+    it('devuelve solo las inspecciones asignadas al inspector', async () => {
+      const res = await get(
+        '/api/inspecciones',
+        await firmar(inspector.auth0Id, [Rol.INSPECTOR]),
+      ).expect(200);
+      expect(res.body).toEqual([
+        {
+          id: inspeccionPropia.id,
+          fecha: '2026-11-01',
+          ubicacion: null,
+          obra: {
+            direccion: 'Calle 1',
+            propietario: 'Propietario 1',
+            responsable: 'Responsable 1',
+          },
+          expediente: { identificadorExterno: 1001 },
+        },
+        {
+          id: inspeccionPropia2.id,
+          fecha: '2026-11-02',
+          ubicacion: null,
+          obra: {
+            direccion: 'Calle 2',
+            propietario: 'Propietario 2',
+            responsable: 'Responsable 2',
+          },
+          expediente: { identificadorExterno: 1002 },
+        },
+      ]);
+      expect(res.body).not.toContainEqual(
+        expect.objectContaining({ id: inspeccionAjena.id }),
+      );
+    });
+
+    it('rechaza a un usuario sin rol INSPECTOR con 403', async () =>
+      get(
+        '/api/inspecciones',
+        await firmar(supervisor.auth0Id, [Rol.SUPERVISOR]),
+      ).expect(403));
   });
 });
