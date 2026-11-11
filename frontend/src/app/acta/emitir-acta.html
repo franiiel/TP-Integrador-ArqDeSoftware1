@@ -1,0 +1,153 @@
+<section class="pagina">
+  <a class="volver" routerLink="/inspecciones">← Mis inspecciones</a>
+
+  @if (inspeccion(); as i) {
+    <header>
+      <h1>Emitir acta</h1>
+      <p class="subtitulo">{{ i.obra.direccion }}</p>
+      <p class="texto-tenue">
+        Expediente N.º {{ i.expediente.identificadorExterno }} · {{ i.fecha | date: 'dd/MM/yyyy' }}
+        · Propietario: {{ i.obra.propietario }}
+      </p>
+    </header>
+
+    @if (!sePuedeEmitir()) {
+      <p class="aviso">
+        @if (situacion()?.estado === 'PENDIENTE') {
+          Esta inspección ya tiene un acta guardada en el celular, pendiente de envío.
+        } @else {
+          Esta inspección ya tiene un acta emitida.
+        }
+      </p>
+      <a class="boton" [routerLink]="['/actas', situacion()?.actaId]">Ver acta</a>
+    } @else {
+      @if (situacion()?.estado === 'RECHAZADA') {
+        <p class="aviso aviso-alerta">
+          El servidor rechazó el acta anterior de esta inspección.
+          <a [routerLink]="['/actas', situacion()?.actaId]">Ver motivo</a>
+        </p>
+      }
+
+      <form class="formulario" [formGroup]="form" (ngSubmit)="confirmar()" novalidate>
+        <fieldset>
+          <legend>Observaciones</legend>
+          <label class="campo">
+            <span class="sr-only">Observaciones</span>
+            <textarea
+              formControlName="observaciones"
+              rows="5"
+              placeholder="Qué se constató en la obra"
+              [attr.aria-invalid]="campoInvalido('observaciones')"
+            ></textarea>
+          </label>
+          @if (campoInvalido('observaciones')) {
+            <p class="error-campo">Escribí las observaciones.</p>
+          }
+        </fieldset>
+
+        <fieldset>
+          <legend>Fotos ({{ fotos().length }} de {{ maxFotos }})</legend>
+          @if (fotos().length > 0) {
+            <ul class="fotos">
+              @for (foto of fotos(); track foto.url; let n = $index) {
+                <li class="foto">
+                  <img [src]="foto.url" [alt]="'Foto ' + (n + 1)" />
+                  <button type="button" class="foto-quitar" (click)="quitarFoto(foto)" [attr.aria-label]="'Quitar foto ' + (n + 1)">
+                    ✕
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+          <app-camara [deshabilitada]="fotos().length >= maxFotos" (fotoCapturada)="agregarFoto($event)" />
+          @if (fotos().length >= maxFotos) {
+            <p class="texto-tenue">Llegaste al máximo de {{ maxFotos }} fotos.</p>
+          }
+          @if (intentoConfirmar() && faltanFotos()) {
+            <p class="error-campo">Sacá al menos una foto.</p>
+          }
+        </fieldset>
+
+        <fieldset>
+          <legend>Medida</legend>
+          <div class="opciones">
+            @for (medida of medidas; track medida.valor) {
+              <label class="opcion">
+                <input type="radio" formControlName="tipoMedida" [value]="medida.valor" />
+                {{ medida.texto }}
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        <fieldset formGroupName="notificacion">
+          <legend>Notificación</legend>
+          <label class="campo">
+            <span>Fecha</span>
+            <input type="date" formControlName="fechaEmision" [attr.aria-invalid]="campoInvalido('notificacion.fechaEmision')" />
+          </label>
+          @if (campoInvalido('notificacion.fechaEmision')) {
+            <p class="error-campo">Indicá la fecha de la notificación.</p>
+          }
+          <label class="campo">
+            <span>Destinatario</span>
+            <input
+              type="text"
+              formControlName="destinatario"
+              autocomplete="off"
+              [attr.list]="'destinatarios'"
+              [attr.aria-invalid]="campoInvalido('notificacion.destinatario')"
+            />
+            <datalist id="destinatarios">
+              <option [value]="i.obra.propietario"></option>
+              <option [value]="i.obra.responsable"></option>
+            </datalist>
+          </label>
+          @if (campoInvalido('notificacion.destinatario')) {
+            <p class="error-campo">Indicá a quién se notifica.</p>
+          }
+          <label class="campo">
+            <span>Medio</span>
+            <input type="text" formControlName="medio" [attr.aria-invalid]="campoInvalido('notificacion.medio')" />
+          </label>
+          @if (campoInvalido('notificacion.medio')) {
+            <p class="error-campo">Indicá el medio de notificación.</p>
+          }
+        </fieldset>
+
+        <fieldset>
+          <legend>Ubicación (opcional)</legend>
+          @switch (estadoUbicacion()) {
+            @case ('BUSCANDO') {
+              <p class="texto-tenue">Buscando la ubicación…</p>
+            }
+            @case ('OBTENIDA') {
+              <p>Ubicación registrada: <strong>{{ ubicacion() }}</strong></p>
+              <button type="button" class="boton boton-secundario" (click)="quitarUbicacion()">No registrar ubicación</button>
+            }
+            @default {
+              @if (estadoUbicacion() === 'NO_DISPONIBLE') {
+                <p class="texto-tenue">No se pudo obtener la ubicación. El acta se puede emitir igual.</p>
+              }
+              <button type="button" class="boton boton-secundario" (click)="obtenerUbicacion()">Registrar ubicación</button>
+            }
+          }
+        </fieldset>
+
+        @if (errorGuardado(); as mensaje) {
+          <p class="aviso aviso-error" role="alert">{{ mensaje }}</p>
+        }
+        @if (intentoConfirmar() && (form.invalid || faltanFotos())) {
+          <p class="aviso aviso-error" role="alert">Faltan datos obligatorios del acta.</p>
+        }
+
+        <button type="submit" class="boton boton-principal" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando…' : 'Confirmar acta' }}
+        </button>
+        <p class="texto-tenue">Al confirmar, el acta se guarda en el celular y se envía apenas haya señal.</p>
+      </form>
+    }
+  } @else {
+    <p class="vacio">No se encontró la inspección en la lista guardada en el celular.</p>
+  }
+</section>

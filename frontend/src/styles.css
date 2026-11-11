@@ -1,1 +1,487 @@
-/* You can add global styles to this file, and also import other style files */
+/* Estilos globales de la PWA. Pensados primero para el celular, con botones grandes para usar en obra. */
+
+:root {
+  --color-fondo: #f3f5f8;
+  --color-superficie: #ffffff;
+  --color-texto: #1b2430;
+  --color-tenue: #5b6676;
+  --color-borde: #d5dbe3;
+  --color-principal: #1f4e79;
+  --color-principal-oscuro: #163a5a;
+  --color-ok: #1d7a46;
+  --color-ok-fondo: #e3f4ea;
+  --color-alerta: #9a6000;
+  --color-alerta-fondo: #fdf1dc;
+  --color-error: #b3261e;
+  --color-error-fondo: #fbe5e3;
+  --color-neutro-fondo: #e8edf3;
+  --radio: 10px;
+  --alto-nav: 64px;
+
+  color-scheme: light;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--color-texto);
+  background: var(--color-fondo);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-fondo);
+  padding-bottom: calc(var(--alto-nav) + env(safe-area-inset-bottom));
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0 0 0.25rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+a {
+  color: var(--color-principal);
+}
+
+/* Estructura de la app */
+
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+  background: var(--color-principal);
+  color: #fff;
+}
+
+.barra-titulo {
+  font-weight: 600;
+}
+
+.simulado {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-alerta-fondo);
+  color: var(--color-alerta);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.conexion {
+  font-size: 0.8rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.conexion-sin-senal {
+  background: var(--color-alerta-fondo);
+  color: var(--color-alerta);
+  font-weight: 600;
+}
+
+.contenido {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.navegacion {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  height: calc(var(--alto-nav) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--color-superficie);
+  border-top: 1px solid var(--color-borde);
+}
+
+.navegacion a {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  color: var(--color-tenue);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.navegacion a.activo {
+  color: var(--color-principal);
+  box-shadow: inset 0 3px 0 var(--color-principal);
+}
+
+.contador {
+  min-width: 1.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* Páginas */
+
+.pagina-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitulo {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.texto-tenue {
+  color: var(--color-tenue);
+  font-size: 0.9rem;
+  margin: 0.25rem 0;
+}
+
+.texto-largo {
+  white-space: pre-wrap;
+}
+
+.volver {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  text-decoration: none;
+}
+
+.vacio {
+  text-align: center;
+  color: var(--color-tenue);
+  padding: 2rem 1rem;
+}
+
+/* Tarjetas */
+
+.tarjeta {
+  display: block;
+  margin: 0.75rem 0;
+  padding: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  color: inherit;
+  text-decoration: none;
+}
+
+.tarjeta-enlace:active {
+  background: var(--color-neutro-fondo);
+}
+
+.tarjeta-fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.tarjeta-titulo {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.tarjeta-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.motivo {
+  margin: 0.5rem 0 0;
+  color: var(--color-error);
+}
+
+.datos {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+}
+
+.datos dt {
+  color: var(--color-tenue);
+}
+
+.datos dd {
+  margin: 0;
+}
+
+/* Estados (inspección y acta) */
+
+.etiqueta {
+  flex-shrink: 0;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--color-neutro-fondo);
+  color: var(--color-principal-oscuro);
+}
+
+.etiqueta[data-estado='PENDIENTE'],
+.estado-acta[data-estado='PENDIENTE'],
+.estado-acta[data-estado='PENDIENTE_ASOCIACION'] {
+  background: var(--color-alerta-fondo);
+  color: var(--color-alerta);
+}
+
+.etiqueta[data-estado='EMITIDA'],
+.estado-acta[data-estado='ASOCIADA'] {
+  background: var(--color-ok-fondo);
+  color: var(--color-ok);
+}
+
+.etiqueta[data-estado='RECHAZADA'],
+.estado-acta[data-estado='RECHAZADA'] {
+  background: var(--color-error-fondo);
+  color: var(--color-error);
+}
+
+.estado-acta {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: var(--radio);
+}
+
+.estado-acta p {
+  margin: 0.25rem 0;
+}
+
+.estado-acta .datos,
+.estado-acta .texto-tenue {
+  color: var(--color-texto);
+}
+
+.estado-acta-titulo {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Avisos */
+
+.aviso {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radio);
+  background: var(--color-neutro-fondo);
+}
+
+.aviso-alerta {
+  background: var(--color-alerta-fondo);
+  color: var(--color-alerta);
+}
+
+.aviso-error {
+  background: var(--color-error-fondo);
+  color: var(--color-error);
+}
+
+/* Botones */
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--color-principal);
+  border-radius: var(--radio);
+  background: var(--color-principal);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.boton:active {
+  background: var(--color-principal-oscuro);
+}
+
+.boton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.boton-secundario {
+  background: var(--color-superficie);
+  color: var(--color-principal);
+}
+
+.boton-secundario:active {
+  background: var(--color-neutro-fondo);
+}
+
+.boton-principal {
+  width: 100%;
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+
+/* Formulario del acta */
+
+.formulario fieldset {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+}
+
+.formulario legend {
+  padding: 0 0.25rem;
+  font-weight: 600;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.campo span {
+  font-size: 0.9rem;
+  color: var(--color-tenue);
+}
+
+.campo input,
+.campo textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px; /* evita el zoom automático de Safari al enfocar */
+  background: #fff;
+  color: inherit;
+}
+
+.campo textarea {
+  resize: vertical;
+}
+
+[aria-invalid='true'] {
+  border-color: var(--color-error) !important;
+}
+
+.error-campo {
+  margin: 0.25rem 0 0;
+  color: var(--color-error);
+  font-size: 0.9rem;
+}
+
+.opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+}
+
+.opcion:has(input:checked) {
+  border-color: var(--color-principal);
+  background: var(--color-neutro-fondo);
+}
+
+/* Fotos y cámara */
+
+.fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.foto {
+  position: relative;
+  aspect-ratio: 1;
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.foto-quitar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.camara-video {
+  width: 100%;
+  max-height: 60dvh;
+  border-radius: 8px;
+  background: #000;
+  object-fit: contain;
+}
+
+.camara-acciones {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.camara-acciones .boton {
+  flex: 1;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

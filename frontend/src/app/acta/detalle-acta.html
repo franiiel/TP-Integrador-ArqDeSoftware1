@@ -1,0 +1,94 @@
+<section class="pagina">
+  <a class="volver" routerLink="/inspecciones">← Mis inspecciones</a>
+
+  @let l = local();
+  @let e = emitida();
+
+  <header>
+    <h1>
+      @if (e) {
+        Acta N.º {{ e.numero }}
+      } @else {
+        Acta
+      }
+    </h1>
+    @if (l) {
+      <p class="subtitulo">{{ l.obraDireccion }}</p>
+      <p class="texto-tenue">Expediente N.º {{ l.expediente }}</p>
+    }
+  </header>
+
+  @switch (l?.estadoLocal) {
+    @case ('PENDIENTE') {
+      <div class="estado-acta" data-estado="PENDIENTE">
+        <p class="estado-acta-titulo">Pendiente de envío</p>
+        <p>El acta está guardada en el celular y todavía no llegó al servidor. Se envía sola cuando haya señal.</p>
+        @if (l!.intentos > 0) {
+          <p class="texto-tenue">
+            {{ l!.intentos }} {{ l!.intentos === 1 ? 'intento' : 'intentos' }} · último
+            {{ l!.ultimoIntento | date: 'dd/MM HH:mm' }}
+            @if (l!.ultimoError) {
+              · {{ l!.ultimoError }}
+            }
+          </p>
+        }
+        <button type="button" class="boton boton-secundario" (click)="reintentarEnvio()" [disabled]="enviando()">
+          {{ enviando() ? 'Enviando…' : 'Intentar enviar ahora' }}
+        </button>
+      </div>
+    }
+    @case ('RECHAZADA') {
+      <div class="estado-acta" data-estado="RECHAZADA">
+        <p class="estado-acta-titulo">Rechazada por el servidor</p>
+        <p><strong>Motivo:</strong> {{ l!.motivoRechazo }}</p>
+        <a class="boton" [routerLink]="['/inspecciones', l!.acta.inspeccionId, 'acta']">Emitir de nuevo</a>
+      </div>
+    }
+    @default {
+      @if (e) {
+        <div class="estado-acta" [attr.data-estado]="e.estado">
+          <p class="estado-acta-titulo">
+            {{ e.estado === 'ASOCIADA' ? 'Asociada al expediente' : 'Recibida · pendiente de asociar al expediente' }}
+          </p>
+          <dl class="datos">
+            <dt>Número</dt>
+            <dd>{{ e.numero }}</dd>
+            <dt>Emitida</dt>
+            <dd>{{ e.fechaEmision | date: 'dd/MM/yyyy HH:mm' }}</dd>
+            <dt>Recibida</dt>
+            <dd>{{ e.fechaHoraRecepcion | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          </dl>
+        </div>
+      } @else if (consultando()) {
+        <p class="texto-tenue">Consultando el acta…</p>
+      }
+      @if (errorConsulta(); as mensaje) {
+        <p class="aviso aviso-alerta" role="status">{{ mensaje }}</p>
+      }
+      <button type="button" class="boton boton-secundario" (click)="consultar()" [disabled]="consultando()">
+        {{ consultando() ? 'Consultando…' : 'Actualizar estado' }}
+      </button>
+    }
+  }
+
+  @if (l) {
+    <h2>Contenido del acta</h2>
+    <dl class="datos">
+      <dt>Fecha de emisión</dt>
+      <dd>{{ l.acta.fechaEmision | date: 'dd/MM/yyyy HH:mm' }}</dd>
+      <dt>Observaciones</dt>
+      <dd class="texto-largo">{{ l.acta.observaciones }}</dd>
+      <dt>Fotos</dt>
+      <dd>{{ l.cantidadFotos }}</dd>
+      <dt>Medida</dt>
+      <dd>{{ textoMedida(l.acta.tipoMedida) }}</dd>
+      <dt>Notificación</dt>
+      <dd>
+        {{ l.acta.notificacion.destinatario }} · {{ l.acta.notificacion.medio }} ·
+        {{ l.acta.notificacion.fechaEmision | date: 'dd/MM/yyyy' }}
+      </dd>
+      <dt>Ubicación</dt>
+      <dd>{{ l.acta.ubicacion ?? 'No registrada' }}</dd>
+    </dl>
+  }
+</section>

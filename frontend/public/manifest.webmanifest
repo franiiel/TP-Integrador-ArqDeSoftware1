@@ -1,6 +1,9 @@
 {
-  "name": "frontend",
-  "short_name": "frontend",
+  "name": "Inspecciones de obra",
+  "short_name": "Inspecciones",
+  "lang": "es-AR",
+  "theme_color": "#1f4e79",
+  "background_color": "#f3f5f8",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
