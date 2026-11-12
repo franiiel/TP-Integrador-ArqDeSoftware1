@@ -60,6 +60,12 @@ export async function guardar<T>(store: string, valor: T, clave?: string): Promi
   await enTransaccion(store, 'readwrite', (s) => s.put(valor, clave));
 }
 
+/** Borra todo lo guardado en el celular (al cerrar sesión, sin actas pendientes). */
+export async function borrarTodo(): Promise<void> {
+  await enTransaccion(STORE_ACTAS, 'readwrite', (s) => s.clear());
+  await enTransaccion(STORE_CACHE, 'readwrite', (s) => s.clear());
+}
+
 /** Pide que el navegador no borre los datos guardados cuando falta espacio (ADR-03). */
 export async function pedirAlmacenamientoPersistente(): Promise<void> {
   try {

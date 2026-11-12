@@ -2,6 +2,20 @@
 
 export type TipoMedida = 'NINGUNA' | 'INTIMACION' | 'CLAUSURA';
 
+export type Rol = 'INSPECTOR' | 'SUPERVISOR' | 'ADMINISTRATIVO';
+
+/** Usuario autenticado (`GET /api/me`). */
+export interface Usuario {
+  id: string;
+  nombre: string;
+  email: string;
+  rol: Rol;
+  /** Solo inspector y supervisor. */
+  cargo?: string | null;
+  /** Solo inspector y supervisor. */
+  legajo?: string | null;
+}
+
 /** Estado de la asociación del acta al expediente en el sistema municipal. */
 export type EstadoActa = 'PENDIENTE_ASOCIACION' | 'ASOCIADA';
 

@@ -5,21 +5,47 @@
       <span class="simulado" title="Datos de prueba: el backend está simulado en el frontend">Datos de prueba</span>
     }
   </span>
-  <span class="conexion" [class.conexion-sin-senal]="!enLinea()" role="status">
-    {{ enLinea() ? 'Con señal' : 'Sin señal' }}
+  <span class="barra-derecha">
+    <span class="conexion" [class.conexion-sin-senal]="!enLinea()" role="status">
+      {{ enLinea() ? 'Con señal' : 'Sin señal' }}
+    </span>
+    @if (auth.usuario(); as usuario) {
+      <button type="button" class="barra-salir" (click)="salir()" [attr.aria-label]="'Cerrar sesión de ' + usuario.nombre">
+        Salir
+      </button>
+    }
   </span>
 </header>
 
+@if (auth.sesionVencida()) {
+  <div class="aviso aviso-alerta aviso-sesion" role="alert">
+    <span>Tu sesión venció. Las actas siguen guardadas en el celular; volvé a ingresar para enviarlas.</span>
+    <button type="button" class="boton" (click)="volverAIngresar()">Volver a ingresar</button>
+  </div>
+}
+
 <main class="contenido">
+  @if (esInspector()) {
+    @if (auth.usuario(); as usuario) {
+      <p class="usuario texto-tenue">
+        {{ usuario.nombre }}
+        @if (usuario.legajo) {
+          · Legajo {{ usuario.legajo }}
+        }
+      </p>
+    }
+  }
   <router-outlet />
 </main>
 
-<nav class="navegacion" aria-label="Secciones">
-  <a routerLink="/inspecciones" routerLinkActive="activo" ariaCurrentWhenActive="page">Mis inspecciones</a>
-  <a routerLink="/pendientes" routerLinkActive="activo" ariaCurrentWhenActive="page">
-    Pendientes
-    @if (cantidadPendientes() > 0) {
-      <span class="contador" [attr.aria-label]="cantidadPendientes() + ' sin enviar'">{{ cantidadPendientes() }}</span>
-    }
-  </a>
-</nav>
+@if (esInspector()) {
+  <nav class="navegacion" aria-label="Secciones">
+    <a routerLink="/inspecciones" routerLinkActive="activo" ariaCurrentWhenActive="page">Mis inspecciones</a>
+    <a routerLink="/pendientes" routerLinkActive="activo" ariaCurrentWhenActive="page">
+      Pendientes
+      @if (cantidadPendientes() > 0) {
+        <span class="contador" [attr.aria-label]="cantidadPendientes() + ' sin enviar'">{{ cantidadPendientes() }}</span>
+      }
+    </a>
+  </nav>
+}

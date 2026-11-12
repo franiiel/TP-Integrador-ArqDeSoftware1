@@ -30,14 +30,37 @@ Componentes previstos (ver `docs/diagramas/c4-componentes-frontend.mmd`):
 - **Cola offline** (`cola-offline/cola-offline.service.ts`): cada acta confirmada se guarda con su UUID generado en el celular y queda `PENDIENTE`. Cuando el servidor la recibe pasa a `ENVIADA` (se borran las fotos del celular y se guarda el número); si el servidor la rechaza (400, 403, 404, 409) queda `RECHAZADA` con el motivo y no se reintenta.
 - **Sincronización** (`sincronizacion/sincronizacion.service.ts`): reintenta al volver la señal (`online`), al abrir la app o volver a mostrarla y cada 60 segundos. Los errores de conexión, 401, 408, 429 y 5xx se reintentan. No usa Background Sync.
 - **api-client** (`api-client/api-client.ts`): llamadas según `docs/openapi.yaml`. El token de Auth0 se obtiene con el token de inyección `OBTENER_TOKEN`, que debe proveer el componente `auth`.
-- `ColaOfflineService.hayNoEnviadas` sirve para impedir cerrar sesión con actas sin enviar.
+- No se puede cerrar sesión con actas pendientes de envío (`ColaOfflineService.hayPendientesDeEnvio`).
 
 ## Backend simulado (solo desarrollo)
 
-Mientras el backend no tenga los endpoints, `src/app/simulador/backend-simulado.ts` responde `GET /api/inspecciones`, `POST /api/actas` y `GET /api/actas/:id` desde el propio frontend, con 4 inspecciones de ejemplo. Arriba se ve la etiqueta "Datos de prueba".
+Mientras el backend no tenga los endpoints, `src/app/simulador/backend-simulado.ts` responde `GET /api/me` (un inspector de prueba), `GET /api/inspecciones`, `POST /api/actas` y `GET /api/actas/:id` desde el propio frontend, con 4 inspecciones de ejemplo. Arriba se ve la etiqueta "Datos de prueba".
 
 - Solo funciona con `pnpm start`; el build de producción usa siempre el backend real.
 - Lo recibido se guarda en `localStorage` (clave `backend-simulado`); borrala para empezar de cero.
 - Respeta el contrato: 201 la primera vez, 200 si se reenvía el mismo UUID, 409 si la inspección ya tiene acta, 400 si faltan fotos o datos. A los 30 segundos de recibida, el acta pasa a "asociada al expediente".
 - Con "Offline" en las herramientas del navegador (pestaña Network) responde como si no hubiera señal.
 - Cuando el backend tenga los endpoints: `USAR_BACKEND_SIMULADO = false` en ese archivo, o borrar la carpeta `simulador`.
+
+## Inicio de sesión (Auth0, ADR-01)
+
+Código en `src/app/auth/`: `auth.service.ts` (sesión), `guards.ts` (rol), `ingresar.ts` y `sin-permiso.ts` (pantallas).
+
+- Se usa el SDK `@auth0/auth0-spa-js` con *refresh tokens* con rotación guardados en el navegador, para que la sesión siga abierta sin señal y el token se renueve solo.
+- El rol y los datos del usuario se piden a `GET /api/me` y quedan guardados en el celular. Solo el rol `INSPECTOR` entra a las pantallas; los demás ven "Sin acceso".
+- Si la sesión vence, las actas siguen guardadas y aparece un aviso para volver a ingresar.
+- Al cerrar sesión se borra lo guardado en el celular. No se permite con actas pendientes de envío.
+
+**Sin Auth0 configurado** (`configuracion-auth0.ts` con "COMPLETAR"), en desarrollo se entra con una sesión de prueba sin login real.
+
+### Configurar Auth0
+
+1. **APIs → Create API.** El *Identifier* es la audiencia (por ejemplo `https://inspecciones-obra/api`); es el mismo valor que valida el backend. Activar *Allow Offline Access*.
+2. **Applications → Create Application → Single Page Application.** En *Settings*:
+   - Allowed Callback URLs: `http://localhost:4200`
+   - Allowed Logout URLs: `http://localhost:4200/ingresar`
+   - Allowed Web Origins: `http://localhost:4200`
+   - *Refresh Token Rotation*: activado.
+   - Agregar las direcciones HTTPS que se usen para probar en el celular.
+3. **Authentication → Social → Google** habilitado para esa aplicación.
+4. Completar `domain`, `clientId` y `audience` en `src/app/auth/configuracion-auth0.ts`.

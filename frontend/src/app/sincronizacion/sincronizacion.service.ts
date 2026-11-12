@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { ApiClient, mensajeDeError } from '../api-client/api-client';
+import { AuthService } from '../auth/auth.service';
 import { ActaLocal, ColaOfflineService } from '../cola-offline/cola-offline.service';
 import { InspeccionesService } from '../inspecciones/inspecciones.service';
 
@@ -30,6 +31,7 @@ export class SincronizacionService {
   private readonly api = inject(ApiClient);
   private readonly cola = inject(ColaOfflineService);
   private readonly inspecciones = inject(InspeccionesService);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly enLinea = signal(typeof navigator === 'undefined' ? true : navigator.onLine);
@@ -80,7 +82,8 @@ export class SincronizacionService {
   private async procesar(): Promise<void> {
     this.ultimaRevision.set(new Date().toISOString());
     const pendientes = this.cola.paraEnviar();
-    if (pendientes.length === 0 || !navigator.onLine) {
+    // Sin sesión (o con la sesión vencida) no se puede enviar: las actas siguen guardadas.
+    if (pendientes.length === 0 || !navigator.onLine || !this.auth.sesionActiva()) {
       return;
     }
     this.enviando.set(true);

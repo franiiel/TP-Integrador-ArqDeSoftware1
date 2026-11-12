@@ -11,7 +11,7 @@ export const API_URL = new InjectionToken<string>('API_URL', {
 
 /**
  * Devuelve el token de acceso de Auth0 para adjuntarlo a cada llamada.
- * Lo provee el componente `auth`; mientras no esté, las llamadas salen sin token.
+ * Lo provee el componente `auth` (ver app.config.ts); sin él, las llamadas salen sin token.
  */
 export const OBTENER_TOKEN = new InjectionToken<() => Promise<string | null>>('OBTENER_TOKEN', {
   providedIn: 'root',
@@ -55,13 +55,19 @@ export class ApiClient {
   }
 }
 
-/** Sin respuesta del servidor: no hay señal o el servidor no está disponible. */
+/**
+ * Sin respuesta del servidor: no hay señal o el servidor no está disponible.
+ * `TypeError` es lo que lanza `fetch` sin red (por ejemplo, al renovar el token de Auth0).
+ */
 export function esFallaDeConexion(error: unknown): boolean {
-  return error instanceof HttpErrorResponse && error.status === 0;
+  return error instanceof HttpErrorResponse ? error.status === 0 : error instanceof TypeError;
 }
 
 /** Texto legible del error que devolvió el backend (esquema `Error` del contrato). */
 export function mensajeDeError(error: unknown): string {
+  if (error instanceof TypeError) {
+    return 'Sin conexión con el servidor';
+  }
   if (!(error instanceof HttpErrorResponse)) {
     return error instanceof Error ? error.message : 'Error desconocido';
   }

@@ -1,11 +1,11 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { isDevMode } from '@angular/core';
 import { Observable, defer, delay, of, throwError } from 'rxjs';
-import { ActaEmitida, ActaNueva, Inspeccion } from '../api-client/modelos';
+import { ActaEmitida, ActaNueva, Inspeccion, Usuario } from '../api-client/modelos';
 
 /**
- * Backend simulado SOLO PARA DESARROLLO: responde `GET /api/inspecciones`, `POST /api/actas`
- * y `GET /api/actas/:id` según docs/openapi.yaml, sin llamar al backend real.
+ * Backend simulado SOLO PARA DESARROLLO: responde `GET /api/me`, `GET /api/inspecciones`,
+ * `POST /api/actas` y `GET /api/actas/:id` según docs/openapi.yaml, sin llamar al backend real.
  * Nunca se activa en el build de producción.
  * Cuando el backend tenga esos endpoints, poner esto en `false` (o borrar la carpeta `simulador`).
  */
@@ -28,6 +28,16 @@ interface EstadoSimulado {
   ultimoNumero: number;
   actas: ActaGuardada[];
 }
+
+/** El usuario que devuelve `GET /api/me` (siempre un inspector). */
+const USUARIO: Usuario = {
+  id: '3b2a1c0d-0000-4000-8000-000000000001',
+  nombre: 'Inspector de prueba',
+  email: 'inspector.prueba@example.com',
+  rol: 'INSPECTOR',
+  cargo: 'Inspector de obras',
+  legajo: '1234',
+};
 
 const INSPECCIONES: Inspeccion[] = [
   {
@@ -92,6 +102,10 @@ export const backendSimulado: HttpInterceptorFn = (req, next) => {
 
 function responder(req: HttpRequest<unknown>, ruta: string): Observable<HttpResponse<unknown>> {
   const estado = leerEstado();
+
+  if (req.method === 'GET' && ruta === '/api/me') {
+    return ok(200, USUARIO);
+  }
 
   if (req.method === 'GET' && ruta === '/api/inspecciones') {
     const lista = INSPECCIONES.map((i) => ({

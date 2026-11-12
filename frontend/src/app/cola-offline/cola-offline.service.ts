@@ -47,8 +47,8 @@ export class ColaOfflineService {
 
   readonly paraEnviar = computed(() => this.noEnviadas().filter((a) => a.estadoLocal === 'PENDIENTE'));
 
-  /** Para el cierre de sesión: no se permite salir con actas sin enviar. */
-  readonly hayNoEnviadas = computed(() => this.noEnviadas().length > 0);
+  /** No se permite cerrar sesión con actas pendientes de envío (ADR-03). */
+  readonly hayPendientesDeEnvio = computed(() => this.paraEnviar().length > 0);
 
   async cargar(): Promise<void> {
     this.actas.set(await leerTodos<ActaLocal>(STORE_ACTAS));
