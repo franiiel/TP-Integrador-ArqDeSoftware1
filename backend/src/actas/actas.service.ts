@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { InspeccionesService } from '../inspecciones/inspecciones.service.js';
 import { ObrasService } from '../obras/obras.service.js';
-import { Usuario } from '../usuarios/usuario.entity.js';
+import { Rol, Usuario } from '../usuarios/usuario.entity.js';
 import { Acta } from './acta.entity.js';
 import { ActaNueva } from './acta-nueva.js';
 import { Fotografia } from './fotografia.entity.js';
@@ -136,7 +136,10 @@ export class ActasService {
   async obtener(usuario: Usuario, id: string) {
     const acta = await this.actas.findOneBy({ id });
     if (!acta) throw new NotFoundException('El acta no existe');
-    await this.verificarAsignacion(usuario, acta.inspeccionId!);
+    // The supervisor reviews every acta; an inspector only sees their own.
+    if (usuario.rol !== Rol.SUPERVISOR) {
+      await this.verificarAsignacion(usuario, acta.inspeccionId!);
+    }
     return acta;
   }
 
