@@ -4,10 +4,10 @@ import { NestFactory } from '@nestjs/core';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { parse } from 'yaml';
 import { AppModule } from './app.module.js';
+import { configurarApp } from './configurar-app.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
+  const app = configurarApp(await NestFactory.create(AppModule));
 
   // Design-first: the docs serve the contract itself, not one generated from decorators.
   const contrato = parse(

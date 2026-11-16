@@ -106,7 +106,7 @@ Reglas entre módulos (ADR-04):
 - Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`).
 - Cada módulo es dueño de sus tablas: otro módulo no usa sus repositorios ni consulta sus tablas directamente.
 - **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML. Es la **capa anticorrupción** frente al sistema de expedientes: traduce el acta del dominio al formato SOAP y la respuesta a términos del dominio.
-- **La asociación al expediente es en segundo plano.** `POST /api/actas` guarda el acta en `PENDIENTE_ASOCIACION` y responde sin llamar al SOAP. Un proceso periódico dentro del mismo backend toma las actas pendientes, las asocia y las pasa a `ASOCIADA`; si falla, la reintenta en la próxima vuelta. Esa es toda la política de reintentos: sin colas ni tablas de trabajos.
+- **La asociación al expediente es en segundo plano.** `POST /api/v1/actas` guarda el acta en `PENDIENTE_ASOCIACION` y responde sin llamar al SOAP. Un proceso periódico dentro del mismo backend toma las actas pendientes, las asocia y las pasa a `ASOCIADA`; si falla, la reintenta en la próxima vuelta. Esa es toda la política de reintentos: sin colas ni tablas de trabajos.
 - **Contrato con el sistema de expedientes:** una única operación SOAP, `AsociarActa`, que recibe identificador del expediente, número de acta, fecha de emisión y tipo de medida (ver `simulador-soap/README.md`). El XML se arma a mano con `fetch`, sin librerías SOAP. Un rechazo de negocio (`soap:Fault`, por ejemplo un expediente inexistente) se registra en el log y el acta queda en `PENDIENTE_ASOCIACION`.
 
 ### Frontend: PWA (ADR-02)
@@ -152,9 +152,10 @@ Reglas entre módulos (ADR-04):
 
 **Diseño primero:** `docs/openapi.yaml` es el contrato. Si un cambio afecta la API, **primero se modifica la especificación**, se valida con `pnpm openapi:lint` y después se implementa. El backend debe exponer además Swagger en `/api/docs`.
 
-- Prefijo `/api`, sin versión en la URL.
+- **Versionado por URL:** prefijo `/api/v1` (versionado URI de Nest, `defaultVersion: '1'`, en `backend/src/configurar-app.ts`). Los cambios compatibles van en la misma versión; un cambio incompatible agrega `@Version('2')` al controlador afectado y v1 se mantiene hasta que el frontend migre. Swagger queda en `/api/docs`, sin versión.
+- **Errores con Problem Details** (RFC 9457, `application/problem+json`): `type` siempre `about:blank`, `title` es la frase del código HTTP, `detail` explica el caso e `instance` es la ruta. Los 400 de validación agregan la extensión `errores`. Lo arma un filtro global (`ProblemDetailsFilter`): los controladores solo lanzan las excepciones HTTP de Nest.
 - JSON en camelCase.
-- El acta y sus fotos se envían en **un único `POST /api/actas`** (`multipart/form-data`).
+- El acta y sus fotos se envían en **un único `POST /api/v1/actas`** (`multipart/form-data`).
 
 ## Base de datos
 

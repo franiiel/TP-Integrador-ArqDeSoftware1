@@ -13,6 +13,7 @@ import { AsociacionActasService } from '../src/actas/asociacion-actas.service.js
 import { Fotografia } from '../src/actas/fotografia.entity.js';
 import { Notificacion } from '../src/actas/notificacion.entity.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
+import { configurarApp } from '../src/configurar-app.js';
 import { Inspeccion } from '../src/inspecciones/inspeccion.entity.js';
 import { Expediente } from '../src/obras/expediente.entity.js';
 import { Obra } from '../src/obras/obra.entity.js';
@@ -47,8 +48,7 @@ describe('Caso de uso mínimo (e2e)', () => {
       .overrideProvider(JWKS)
       .useValue(createLocalJWKSet({ keys: [jwk] }))
       .compile();
-    app = modulo.createNestApplication();
-    app.setGlobalPrefix('api');
+    app = configurarApp(modulo.createNestApplication());
     await app.init();
 
     const db = app.get(DataSource);
@@ -125,24 +125,45 @@ describe('Caso de uso mínimo (e2e)', () => {
     return token ? req.set('Authorization', `Bearer ${token}`) : req;
   };
 
+  describe('errores y versionado', () => {
+    it('responde los errores como Problem Details (RFC 9457)', async () => {
+      const res = await get('/api/v1/me')
+        .expect(401)
+        .expect('Content-Type', /application\/problem\+json/);
+      expect(res.body).toEqual({
+        type: 'about:blank',
+        title: 'Unauthorized',
+        status: 401,
+        detail: 'Falta el token de acceso',
+        instance: '/api/v1/me',
+      });
+    });
+
+    it('una ruta sin versión no existe', async () =>
+      get('/api/me', await firmar(inspector.auth0Id, [Rol.INSPECTOR])).expect(
+        404,
+      ));
+  });
+
   describe('autenticación', () => {
-    it('rechaza un pedido sin token con 401', () => get('/api/me').expect(401));
+    it('rechaza un pedido sin token con 401', () =>
+      get('/api/v1/me').expect(401));
 
     it('rechaza un token de otro emisor con 401', async () =>
       get(
-        '/api/me',
+        '/api/v1/me',
         await firmar(inspector.auth0Id, [Rol.INSPECTOR], 'https://otro/'),
       ).expect(401));
 
     it('rechaza un usuario que no está registrado con 403', async () =>
       get(
-        '/api/me',
+        '/api/v1/me',
         await firmar('google-oauth2|nadie', [Rol.INSPECTOR]),
       ).expect(403));
 
     it('GET /api/me devuelve los datos del usuario autenticado', async () => {
       const res = await get(
-        '/api/me',
+        '/api/v1/me',
         await firmar(inspector.auth0Id, [Rol.INSPECTOR]),
       ).expect(200);
       expect(res.body).toEqual({
@@ -159,7 +180,7 @@ describe('Caso de uso mínimo (e2e)', () => {
   describe('GET /api/inspecciones', () => {
     it('devuelve solo las inspecciones asignadas al inspector', async () => {
       const res = await get(
-        '/api/inspecciones',
+        '/api/v1/inspecciones',
         await firmar(inspector.auth0Id, [Rol.INSPECTOR]),
       ).expect(200);
       expect(res.body).toEqual([
@@ -193,7 +214,7 @@ describe('Caso de uso mínimo (e2e)', () => {
 
     it('rechaza a un usuario sin rol INSPECTOR con 403', async () =>
       get(
-        '/api/inspecciones',
+        '/api/v1/inspecciones',
         await firmar(supervisor.auth0Id, [Rol.SUPERVISOR]),
       ).expect(403));
   });
@@ -224,7 +245,7 @@ describe('Caso de uso mínimo (e2e)', () => {
 
     const enviar = (acta: object, fotos = 2, sub = inspector.auth0Id) => {
       const req = request(app.getHttpServer())
-        .post('/api/actas')
+        .post('/api/v1/actas')
         .set('Authorization', `Bearer ${tokens[sub]}`)
         .field('acta', JSON.stringify(acta));
       for (let i = 0; i < fotos; i++) {
@@ -293,12 +314,23 @@ describe('Caso de uso mínimo (e2e)', () => {
         400,
       ));
 
-    it('rechaza un acta con datos inválidos con 400', () =>
-      enviar(
+    it('rechaza un acta con datos inválidos con 400 y la lista de errores', async () => {
+      const res = await enviar(
         { ...actaNueva(inspeccionAjena.id), tipoMedida: 'MULTA' },
         1,
         otroInspector.auth0Id,
-      ).expect(400));
+      )
+        .expect(400)
+        .expect('Content-Type', /application\/problem\+json/);
+      expect(res.body).toEqual({
+        type: 'about:blank',
+        title: 'Bad Request',
+        status: 400,
+        detail: 'Los datos enviados no cumplen las validaciones',
+        instance: '/api/v1/actas',
+        errores: ['tipoMedida debe ser NINGUNA, INTIMACION o CLAUSURA'],
+      });
+    });
 
     it('acepta un acta sin ubicación', async () => {
       await enviar(
@@ -359,7 +391,7 @@ describe('Caso de uso mínimo (e2e)', () => {
         .getRepository(Acta)
         .findBy({ inspeccionId: inspeccionPropia.id });
       const res = await get(
-        `/api/actas/${acta.id}`,
+        `/api/v1/actas/${acta.id}`,
         await firmar(inspector.auth0Id, [Rol.INSPECTOR]),
       ).expect(200);
       expect(res.body).toMatchObject({
@@ -375,14 +407,14 @@ describe('Caso de uso mínimo (e2e)', () => {
         .getRepository(Acta)
         .findBy({ inspeccionId: inspeccionPropia.id });
       await get(
-        `/api/actas/${acta.id}`,
+        `/api/v1/actas/${acta.id}`,
         await firmar(otroInspector.auth0Id, [Rol.INSPECTOR]),
       ).expect(403);
     });
 
     it('responde 404 si el acta no existe', async () =>
       get(
-        `/api/actas/${randomUUID()}`,
+        `/api/v1/actas/${randomUUID()}`,
         await firmar(inspector.auth0Id, [Rol.INSPECTOR]),
       ).expect(404));
   });

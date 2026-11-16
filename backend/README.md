@@ -12,7 +12,7 @@ pnpm test:e2e    # tests end-to-end
 pnpm lint        # oxlint
 ```
 
-La API responde bajo `/api` y la documentación (Swagger) está en `http://localhost:3000/api/docs`. Swagger muestra el contrato `docs/openapi.yaml` tal cual, sin generarlo desde el código.
+La API responde bajo `/api/v1` (versión mayor en la URL) con errores en formato Problem Details (`application/problem+json`), y la documentación (Swagger) está en `http://localhost:3000/api/docs`. Swagger muestra el contrato `docs/openapi.yaml` tal cual, sin generarlo desde el código.
 
 ### Base de datos y migraciones
 
