@@ -52,7 +52,7 @@ export class ActasController {
   }
 
   @Get(':id')
-  @Roles([Rol.INSPECTOR, Rol.SUPERVISOR])
+  @Roles([Rol.INSPECTOR, Rol.SUPERVISOR, Rol.ADMINISTRATIVO])
   async obtenerActa(
     @UsuarioActual() usuario: Usuario,
     @Param('id', new ParseUUIDPipe({ errorHttpStatusCode: 404 })) id: string,

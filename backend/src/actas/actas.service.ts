@@ -133,8 +133,8 @@ export class ActasService {
   async obtener(usuario: Usuario, id: string) {
     const acta = await this.actas.findOneBy({ id });
     if (!acta) throw new NotFoundException('El acta no existe');
-    // The supervisor reviews every acta; an inspector only sees their own.
-    if (usuario.rol !== Rol.SUPERVISOR) {
+    // An inspector only sees their own actas; the other roles read any of them.
+    if (usuario.rol === Rol.INSPECTOR) {
       await this.verificarAsignacion(usuario, acta.inspeccionId!);
     }
     return acta;

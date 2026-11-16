@@ -143,8 +143,9 @@ paths:
       operationId: obtenerActa
       summary: Número y estado de un acta
       description: |
-        El inspector solo puede consultar sus propias actas; el supervisor puede
-        consultar cualquiera (solo lectura). Emitir actas es exclusivo del inspector.
+        Cualquier usuario autenticado puede consultar un acta: el inspector solo
+        las propias; el supervisor y el administrativo, cualquiera (solo lectura).
+        Emitir actas es exclusivo del inspector.
       parameters:
         - name: id
           in: path

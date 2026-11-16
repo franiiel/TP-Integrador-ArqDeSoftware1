@@ -26,6 +26,7 @@ describe('Caso de uso mínimo (e2e)', () => {
   let inspector: Usuario;
   let otroInspector: Usuario;
   let supervisor: Usuario;
+  let administrativo: Usuario;
   let inspeccionPropia: Inspeccion;
   let inspeccionPropia2: Inspeccion;
   let inspeccionAjena: Inspeccion;
@@ -56,7 +57,7 @@ describe('Caso de uso mínimo (e2e)', () => {
         `La app de test apunta a "${String(db.options.database)}"`,
       );
     }
-    [inspector, otroInspector, supervisor] = await db
+    [inspector, otroInspector, supervisor, administrativo] = await db
       .getRepository(Usuario)
       .save([
         {
@@ -82,6 +83,14 @@ describe('Caso de uso mínimo (e2e)', () => {
           rol: Rol.SUPERVISOR,
           cargo: 'Supervisora',
           legajo: '2001',
+        },
+        {
+          auth0Id: 'google-oauth2|administrativo',
+          nombre: 'Pedro Administrativo',
+          email: 'pedro@example.com',
+          rol: Rol.ADMINISTRATIVO,
+          cargo: null,
+          legajo: null,
         },
       ]);
 
@@ -419,6 +428,18 @@ describe('Caso de uso mínimo (e2e)', () => {
         numero: acta.numero,
         estado: 'ASOCIADA',
       });
+    });
+
+    it('el administrativo puede consultar cualquier acta', async () => {
+      const [acta] = await app
+        .get(DataSource)
+        .getRepository(Acta)
+        .findBy({ inspeccionId: inspeccionPropia.id });
+      const res = await get(
+        `/api/v1/actas/${acta.id}`,
+        await firmar(administrativo.auth0Id, [Rol.ADMINISTRATIVO]),
+      ).expect(200);
+      expect(res.body).toMatchObject({ id: acta.id, numero: acta.numero });
     });
 
     it('rechaza consultar el acta de otro inspector con 403', async () => {
