@@ -13,7 +13,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
-    "lint": "oxlint --type-aware src/ test/",
+    "lint": "oxlint --type-aware src/ test/ && pnpm lint:deps",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
@@ -22,7 +22,8 @@
     "migration:generate": "nest build && typeorm migration:generate -d dist/data-source.js",
     "migration:run": "nest build && typeorm migration:run -d dist/data-source.js",
     "migration:revert": "typeorm migration:revert -d dist/data-source.js",
-    "seed": "nest build && node dist/seed.js"
+    "seed": "nest build && node dist/seed.js",
+    "lint:deps": "depcruise src --config .dependency-cruiser.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -45,6 +46,7 @@
     "@types/node": "^24.0.0",
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
+    "dependency-cruiser": "^18.7.2",
     "oxlint": "^1.58.0",
     "oxlint-tsgolint": "^7.0.2001",
     "prettier": "^3.4.2",
