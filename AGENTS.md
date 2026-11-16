@@ -34,7 +34,7 @@ El objetivo del código es **demostrar las decisiones de arquitectura**, no cubr
 
 - Login con Auth0 (Google) y control de acceso por rol.
 - Lista de las inspecciones asignadas al inspector.
-- Formulario del acta: observaciones, fotos con la cámara, ubicación opcional, tipo de medida y notificación.
+- Formulario del acta: observaciones, fotos con la cámara, ubicación opcional y tipo de medida.
 - Guardado offline en el celular y reenvío automático al recuperar la señal (es la restricción central del escenario).
 - Recepción idempotente del acta en el backend y numeración correlativa por año.
 - Asociación al expediente a través del simulador SOAP.
@@ -44,7 +44,7 @@ El objetivo del código es **demostrar las decisiones de arquitectura**, no cubr
 - Asignación de inspecciones, revisión, rectificación y anulación de actas.
 - Pantallas de supervisor y administrativo.
 - Alta de obras y expedientes: se resuelve con **datos semilla**.
-- Registro de auditoría (módulo `auditoria`) y verificación de integridad de las actas.
+- Registro de auditoría y verificación de integridad de las actas (el hash SHA-256 de cada foto sí se guarda).
 - Sincronización en segundo plano con la app cerrada (Background Sync): alcanza con reintentar mientras la app está abierta.
 
 Si una tarea parece requerir algo de esta lista, frená y preguntá antes de implementarlo.
@@ -95,11 +95,9 @@ Una sola aplicación NestJS, un solo proceso, una sola base de datos, organizada
 |---|---|
 | `auth` | Valida tokens de Auth0 y verifica roles (guards) |
 | `usuarios` | Cargo y legajo, vinculados al `sub` de Auth0 |
-| `obras` | Obras y expedientes |
-| `inspecciones` | Asignación y consulta de inspecciones |
-| `actas` | Recepción, numeración, fotos, notificación, revisión, rectificación y anulación |
+| `inspecciones` | Asignación y consulta de inspecciones; dueño de obras y expedientes |
+| `actas` | Recepción, numeración, fotos, revisión, rectificación y anulación |
 | `integracion-expedientes` | Adaptador SOAP: asociación de actas y reintentos |
-| `auditoria` | Registro de acciones sobre las actas |
 
 Reglas entre módulos (ADR-04):
 - Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`).
@@ -136,17 +134,16 @@ Reglas entre módulos (ADR-04):
 
 - **Un acta emitida es inmutable.** No se actualiza ni se borra su contenido. Lo único que cambia es su `estado`.
 - Un acta se considera **emitida cuando el servidor la recibe**.
-- La **fecha legal** del acta es `fechaEmision` (del celular, al labrarla). El servidor guarda además `fechaHoraRecepcion`.
+- La **fecha legal** del acta es `fechaEmision` (del celular, al labrarla). El servidor guarda además `fechaRecepcion`.
 - Estados del acta (asociación al expediente): `PENDIENTE_ASOCIACION` → `ASOCIADA`.
-- **Rectificar o anular es emitir otra acta** con `tipoActa` `RECTIFICACION` o `ANULACION` que referencia a la anterior (`actaOriginalId`); la anterior no cambia. Solo se rectifica o anula un acta `ASOCIADA`, y solo lo hace el supervisor.
-- Un acta original viene de una inspección y no tiene `tipoActa`; una rectificación o anulación no tiene inspección (lo garantiza el `CHECK` `ck_actas_origen`).
+- **Rectificar o anular es emitir otra acta** con `tipoActa` `RECTIFICACION` o `ANULACION` que referencia a la anterior (`actaAntecedenteId`); la anterior no cambia. Solo se rectifica o anula un acta `ASOCIADA`, y solo lo hace el supervisor.
+- Un acta `ORIGINAL` viene de una inspección y no tiene antecedente; una rectificación o anulación no tiene inspección (lo garantiza el `CHECK` `ck_actas_origen`).
 - **Solo el inspector carga actas**, y solo de las inspecciones asignadas a él.
-- Permisos de consulta: el inspector ve solo sus actas; el **supervisor puede consultar cualquier acta** (solo lectura).
+- Permisos de consulta: el inspector ve solo sus actas; el **supervisor y el administrativo pueden consultar cualquier acta** (solo lectura).
 - Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
 - Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
 - La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
-- Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año. El año es el de `fechaEmision` en hora argentina, no el de la recepción.
-- Cada acta genera exactamente una notificación (fecha de emisión, destinatario y medio). El sistema no le envía nada al destinatario; solo la registra.
+- Número de acta: **correlativo por año** (`2026-00001`), asignado dentro de la transacción con un lock de PostgreSQL por año (`pg_advisory_xact_lock`) y el máximo número de ese año. El año es el de `fechaEmision` en hora argentina, no el de la recepción.
 
 ## API
 
@@ -162,9 +159,9 @@ Reglas entre módulos (ADR-04):
 - PostgreSQL con TypeORM. **Identificadores UUID** en todas las tablas.
 - Nombres de tablas y columnas en `snake_case`.
 - El modelo está en `docs/diagramas/modelo-datos.mmd`.
-- Una sola tabla `usuarios` (rol como columna). La medida es la columna `tipo_medida` de `actas`, y una rectificación o anulación es otra fila de `actas` (`tipo_acta`, `acta_original_id`).
+- Una sola tabla `usuarios` (rol como columna). La medida es la columna `tipo_medida` de `actas`, y una rectificación o anulación es otra fila de `actas` (`tipo_acta`, `acta_antecedente_id`).
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
-- **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
+- **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda la ruta del archivo (`ref_archivo`) y su hash SHA-256 (`hash_sha256`). La carpeta se configura por variable de entorno y nunca se sube al repositorio.
 
 ## Despliegue
 

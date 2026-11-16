@@ -52,7 +52,7 @@ Además, cada usuario tiene que existir en la tabla `usuarios` con su `sub` de A
 
 ### Fotos de las actas
 
-Se guardan en la carpeta `FOTOS_DIR` (por defecto `uploads/fotos` en la raíz del repositorio, ignorada por git), una subcarpeta por acta. La tabla `fotografias` guarda solo la ruta.
+Se guardan en la carpeta `FOTOS_DIR` (por defecto `uploads/fotos` en la raíz del repositorio, ignorada por git), una subcarpeta por acta. La tabla `fotografias` guarda la ruta y el hash SHA-256 de cada foto.
 
 ### Asociación al expediente
 
@@ -69,6 +69,6 @@ Se corre una vez, después de `pnpm migration:run`; si ya hay usuarios cargados,
 Los tests e2e levantan la aplicación completa, así que necesitan la base corriendo (`pnpm db:up`).
 
 Módulos previstos (ver `docs/diagramas/c4-componentes-backend.mmd`):
-`auth`, `usuarios`, `obras`, `inspecciones`, `actas`, `integracion-expedientes` y `auditoria`.
+`auth`, `usuarios`, `inspecciones` (con obras y expedientes), `actas` e `integracion-expedientes`.
 
 El contrato de la API está en `docs/openapi.yaml` y la implementación debe respetarlo.
