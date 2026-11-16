@@ -21,7 +21,8 @@
     "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
     "migration:generate": "nest build && typeorm migration:generate -d dist/data-source.js",
     "migration:run": "nest build && typeorm migration:run -d dist/data-source.js",
-    "migration:revert": "typeorm migration:revert -d dist/data-source.js"
+    "migration:revert": "typeorm migration:revert -d dist/data-source.js",
+    "seed": "nest build && node dist/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -29,6 +30,7 @@
     "@nestjs/platform-express": "^12.0.1",
     "@nestjs/swagger": "^12.1.0",
     "@nestjs/typeorm": "^12.0.2",
+    "jose": "^6.2.15",
     "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",

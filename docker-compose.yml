@@ -1,6 +1,5 @@
-# Servicios para desarrollo local.
-# Por ahora solo PostgreSQL; backend, frontend y simulador SOAP se agregan
-# cuando se defina el despliegue.
+# Whole system: `docker compose up --build`. Only Auth0 stays outside (SaaS, see ADR-01).
+# Values come from .env (copy it from .env.example).
 
 services:
   db:
@@ -21,5 +20,54 @@ services:
       timeout: 5s
       retries: 5
 
+  simulador:
+    build:
+      context: .
+      dockerfile: simulador-soap/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-inspecciones}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-inspecciones}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      SEED_INSPECTOR_AUTH0_ID: ${SEED_INSPECTOR_AUTH0_ID}
+      SEED_SUPERVISOR_AUTH0_ID: ${SEED_SUPERVISOR_AUTH0_ID}
+      FOTOS_DIR: /fotos
+      EXPEDIENTES_SOAP_URL: http://simulador:8080/expedientes
+      ASOCIACION_INTERVALO_MS: ${ASOCIACION_INTERVALO_MS:-60000}
+    volumes:
+      - fotos:/fotos
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      simulador:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      # Same port as `ng serve`, already allowed as callback URL in Auth0.
+      - "4200:80"
+    depends_on:
+      - backend
+
 volumes:
   db-data:
+  # Photos of the actas: legal evidence, so they live in a named volume, not in the container.
+  fotos:
