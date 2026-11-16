@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Obra } from '../obras/obra.entity.js';
+import { Obra } from './obra.entity.js';
 import { Usuario } from '../usuarios/usuario.entity.js';
 
 @Entity('inspecciones')

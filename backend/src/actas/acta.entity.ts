@@ -10,7 +10,7 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Inspeccion } from '../inspecciones/inspeccion.entity.js';
-import { Expediente } from '../obras/expediente.entity.js';
+import { Expediente } from '../inspecciones/expediente.entity.js';
 import { Fotografia } from './fotografia.entity.js';
 import { Notificacion } from './notificacion.entity.js';
 

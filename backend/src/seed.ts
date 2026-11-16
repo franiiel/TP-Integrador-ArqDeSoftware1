@@ -1,7 +1,7 @@
 import dataSource from './data-source.js';
 import { Inspeccion } from './inspecciones/inspeccion.entity.js';
-import { Expediente } from './obras/expediente.entity.js';
-import { Obra } from './obras/obra.entity.js';
+import { Expediente } from './inspecciones/expediente.entity.js';
+import { Obra } from './inspecciones/obra.entity.js';
 import { Rol, Usuario } from './usuarios/usuario.entity.js';
 
 // Test data for the minimal use case. Run once, after the migrations.

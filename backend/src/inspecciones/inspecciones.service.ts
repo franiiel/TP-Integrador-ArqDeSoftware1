@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
-import { ObrasService } from '../obras/obras.service.js';
+import { EntityManager, In, Repository } from 'typeorm';
+import { Expediente } from './expediente.entity.js';
 import { Inspeccion } from './inspeccion.entity.js';
 
 @Injectable()
@@ -9,7 +9,8 @@ export class InspeccionesService {
   constructor(
     @InjectRepository(Inspeccion)
     private readonly inspecciones: Repository<Inspeccion>,
-    private readonly obrasService: ObrasService,
+    @InjectRepository(Expediente)
+    private readonly expedientes: Repository<Expediente>,
   ) {}
 
   async listarAsignadas(inspectorId: string) {
@@ -18,7 +19,7 @@ export class InspeccionesService {
       order: { fecha: 'ASC' },
     });
     if (inspecciones.length === 0) return [];
-    const expedientes = await this.obrasService.buscarExpedientesDeObras(
+    const expedientes = await this.buscarExpedientesDeObras(
       inspecciones.map((i) => i.obraId),
     );
     return inspecciones.map(({ id, fecha, ubicacion, obraId }) => {
@@ -34,6 +35,22 @@ export class InspeccionesService {
         expediente: { identificadorExterno },
       };
     });
+  }
+
+  // Each obra has exactly one expediente, which carries the obra itself.
+  buscarExpedientesDeObras(obraIds: string[]) {
+    return this.expedientes.find({
+      where: { obraId: In(obraIds) },
+      relations: { obra: true },
+    });
+  }
+
+  buscarExpedientes(ids: string[]) {
+    return this.expedientes.findBy({ id: In(ids) });
+  }
+
+  buscarExpedienteDeObra(obraId: string) {
+    return this.expedientes.findOneByOrFail({ obraId });
   }
 
   buscarPorId(id: string) {

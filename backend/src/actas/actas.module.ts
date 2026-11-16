@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InspeccionesModule } from '../inspecciones/inspecciones.module.js';
 import { IntegracionExpedientesModule } from '../integracion-expedientes/integracion-expedientes.module.js';
-import { ObrasModule } from '../obras/obras.module.js';
 import { Acta } from './acta.entity.js';
 import { ActasController } from './actas.controller.js';
 import { ActasService } from './actas.service.js';
@@ -15,7 +14,6 @@ import { NumeradorActa } from './numerador-acta.entity.js';
   imports: [
     TypeOrmModule.forFeature([Acta, Fotografia, Notificacion, NumeradorActa]),
     InspeccionesModule,
-    ObrasModule,
     IntegracionExpedientesModule,
   ],
   controllers: [ActasController],

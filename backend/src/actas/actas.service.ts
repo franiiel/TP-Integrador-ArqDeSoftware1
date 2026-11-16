@@ -10,7 +10,6 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { InspeccionesService } from '../inspecciones/inspecciones.service.js';
-import { ObrasService } from '../obras/obras.service.js';
 import { Rol, Usuario } from '../usuarios/usuario.entity.js';
 import { Acta } from './acta.entity.js';
 import { ActaNueva } from './acta-nueva.js';
@@ -34,7 +33,6 @@ export class ActasService {
     @InjectRepository(Acta) private readonly actas: Repository<Acta>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly inspeccionesService: InspeccionesService,
-    private readonly obrasService: ObrasService,
   ) {}
 
   // Returns the acta and whether it was created now (false = a resend of the same id).
@@ -62,7 +60,7 @@ export class ActasService {
     if (await this.actas.existsBy({ inspeccionId: inspeccion.id })) {
       throw new ConflictException('La inspección ya tiene otra acta emitida');
     }
-    const expediente = await this.obrasService.buscarExpedienteDeObra(
+    const expediente = await this.inspeccionesService.buscarExpedienteDeObra(
       inspeccion.obraId,
     );
 
