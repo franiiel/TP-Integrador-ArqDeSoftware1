@@ -70,7 +70,6 @@ backend/           API NestJS
 simulador-soap/    Simulación del sistema municipal de expedientes
 docs/
   openapi.yaml     Contrato de la API (diseño primero)
-  diagramas/       Fuentes Mermaid de los diagramas del documento de arquitectura
 docker-compose.yml Todo el sistema: PostgreSQL, backend, frontend y simulador SOAP
 ```
 
@@ -161,7 +160,6 @@ Reglas entre módulos (ADR-04):
 
 - PostgreSQL con TypeORM. **Identificadores UUID** en todas las tablas.
 - Nombres de tablas y columnas en `snake_case`.
-- El modelo está en `docs/diagramas/modelo-datos.mmd`.
 - Una sola tabla `usuarios` (rol como columna). La medida es la columna `tipo_medida` de `actas`, y una rectificación o anulación es otra fila de `actas` (`tipo_acta`, `acta_original_id`).
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
 - **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
