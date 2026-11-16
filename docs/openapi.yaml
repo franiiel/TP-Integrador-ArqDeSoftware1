@@ -12,8 +12,15 @@ info:
     en el token.
 
     **Alcance:** solo se documentan los endpoints del caso de uso mínimo.
+
+    **Versionado:** la versión mayor va en la URL (`/api/v1`). Los cambios compatibles
+    (campos u operaciones nuevas) se agregan en la misma versión; un cambio incompatible
+    publica `/api/v2` y la versión anterior se mantiene hasta que el frontend migre.
+
+    **Errores:** todas las respuestas de error usan Problem Details
+    ([RFC 9457](https://www.rfc-editor.org/rfc/rfc9457)) con `Content-Type: application/problem+json`.
 servers:
-  - url: http://localhost:3000/api
+  - url: http://localhost:3000/api/v1
     description: Desarrollo local
 security:
   - auth0: []
@@ -126,9 +133,9 @@ paths:
         '409':
           description: La inspección ya tiene otra acta emitida
           content:
-            application/json:
+            application/problem+json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/Problema'
 
   /actas/{id}:
     get:
@@ -169,45 +176,60 @@ components:
     NoAutenticado:
       description: Falta el token o es inválido
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/Problema'
     SinPermiso:
       description: El rol del usuario no permite la operación
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/Problema'
     NoEncontrado:
       description: El recurso no existe
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/Problema'
     DatosInvalidos:
       description: Los datos enviados no cumplen las validaciones
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/Problema'
 
   schemas:
-    Error:
+    Problema:
       type: object
-      required: [statusCode, message]
+      description: Problem Details (RFC 9457).
+      required: [type, title, status]
       properties:
-        statusCode:
+        type:
+          type: string
+          format: uri-reference
+          description: No se definen tipos propios; siempre `about:blank`, y el significado lo da `status`.
+          examples: [about:blank]
+        title:
+          type: string
+          description: Frase estándar del código HTTP
+          examples: [Bad Request]
+        status:
           type: integer
           examples: [400]
-        message:
-          oneOf:
-            - type: string
-            - type: array
-              items:
-                type: string
-        error:
+        detail:
           type: string
-          examples: [Bad Request]
+          description: Explicación legible de este caso concreto
+          examples: [El acta debe tener entre 1 y 10 fotos]
+        instance:
+          type: string
+          format: uri-reference
+          description: Ruta del pedido que falló
+          examples: [/api/v1/actas]
+        errores:
+          type: array
+          description: Extensión; lista de validaciones que fallaron (solo en 400)
+          items:
+            type: string
 
     Rol:
       type: string
