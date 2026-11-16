@@ -6,16 +6,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { createHash } from 'node:crypto';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
 import { InspeccionesService } from '../inspecciones/inspecciones.service.js';
-import { ObrasService } from '../obras/obras.service.js';
 import { Rol, Usuario } from '../usuarios/usuario.entity.js';
-import { Acta } from './acta.entity.js';
+import { Acta, TipoActa } from './acta.entity.js';
 import { ActaNueva } from './acta-nueva.js';
 import { Fotografia } from './fotografia.entity.js';
-import { Notificacion } from './notificacion.entity.js';
 
 // The parts of an uploaded file this service uses.
 export type Foto = { buffer: Buffer; mimetype: string };
@@ -34,7 +33,6 @@ export class ActasService {
     @InjectRepository(Acta) private readonly actas: Repository<Acta>,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly inspeccionesService: InspeccionesService,
-    private readonly obrasService: ObrasService,
   ) {}
 
   // Returns the acta and whether it was created now (false = a resend of the same id).
@@ -62,7 +60,7 @@ export class ActasService {
     if (await this.actas.existsBy({ inspeccionId: inspeccion.id })) {
       throw new ConflictException('La inspección ya tiene otra acta emitida');
     }
-    const expediente = await this.obrasService.buscarExpedienteDeObra(
+    const expediente = await this.inspeccionesService.buscarExpedienteDeObra(
       inspeccion.obraId,
     );
 
@@ -70,11 +68,12 @@ export class ActasService {
     // written after the commit, a failure would leave an acta without photos.
     const carpeta = join(fotosDir(), nueva.id);
     await mkdir(carpeta, { recursive: true });
-    const rutas = await Promise.all(
+    const archivos = await Promise.all(
       fotos.map(async (foto, i) => {
-        const ruta = join(carpeta, `${i + 1}.${TIPOS_FOTO[foto.mimetype]}`);
-        await writeFile(ruta, foto.buffer);
-        return ruta;
+        const refArchivo = join(carpeta, `${i + 1}.${TIPOS_FOTO[foto.mimetype]}`);
+        await writeFile(refArchivo, foto.buffer);
+        const hashSha256 = createHash('sha256').update(foto.buffer).digest('hex');
+        return { refArchivo, hashSha256 };
       }),
     );
 
@@ -88,17 +87,19 @@ export class ActasService {
             year: 'numeric',
           }).format(nueva.fechaEmision),
         );
-        // The upsert locks the year's row until commit: numbers can't repeat or skip.
-        const [{ ultimo_numero }] = (await manager.query(
-          `INSERT INTO numeradores_acta (anio, ultimo_numero) VALUES ($1, 1)
-           ON CONFLICT (anio) DO UPDATE SET ultimo_numero = numeradores_acta.ultimo_numero + 1
-           RETURNING ultimo_numero`,
-          [anio],
-        )) as [{ ultimo_numero: number }];
+        // The year's lock lasts until commit: two actas can't take the same number.
+        // The zero-padded number makes the text max the numeric max.
+        await manager.query('SELECT pg_advisory_xact_lock($1)', [anio]);
+        const [{ ultimo }] = (await manager.query(
+          `SELECT max(numero) AS ultimo FROM actas WHERE numero LIKE $1`,
+          [`${anio}-%`],
+        )) as [{ ultimo: string | null }];
+        const siguiente = ultimo ? Number(ultimo.split('-')[1]) + 1 : 1;
 
         const acta = await manager.save(Acta, {
           id: nueva.id,
-          numero: `${anio}-${String(ultimo_numero).padStart(5, '0')}`,
+          numero: `${anio}-${String(siguiente).padStart(5, '0')}`,
+          tipoActa: TipoActa.ORIGINAL,
           inspeccionId: inspeccion.id,
           expedienteId: expediente.id,
           fechaEmision: nueva.fechaEmision,
@@ -107,12 +108,8 @@ export class ActasService {
         });
         await manager.save(
           Fotografia,
-          rutas.map((rutaArchivo) => ({ actaId: acta.id, rutaArchivo })),
+          archivos.map((archivo) => ({ actaId: acta.id, ...archivo })),
         );
-        await manager.save(Notificacion, {
-          actaId: acta.id,
-          ...nueva.notificacion,
-        });
         await this.inspeccionesService.registrarUbicacion(
           manager,
           inspeccion.id,
@@ -136,8 +133,8 @@ export class ActasService {
   async obtener(usuario: Usuario, id: string) {
     const acta = await this.actas.findOneBy({ id });
     if (!acta) throw new NotFoundException('El acta no existe');
-    // The supervisor reviews every acta; an inspector only sees their own.
-    if (usuario.rol !== Rol.SUPERVISOR) {
+    // An inspector only sees their own actas; the other roles read any of them.
+    if (usuario.rol === Rol.INSPECTOR) {
       await this.verificarAsignacion(usuario, acta.inspeccionId!);
     }
     return acta;

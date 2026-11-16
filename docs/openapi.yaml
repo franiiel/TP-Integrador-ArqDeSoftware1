@@ -143,8 +143,9 @@ paths:
       operationId: obtenerActa
       summary: Número y estado de un acta
       description: |
-        El inspector solo puede consultar sus propias actas; el supervisor puede
-        consultar cualquiera (solo lectura). Emitir actas es exclusivo del inspector.
+        Cualquier usuario autenticado puede consultar un acta: el inspector solo
+        las propias; el supervisor y el administrativo, cualquiera (solo lectura).
+        Emitir actas es exclusivo del inspector.
       parameters:
         - name: id
           in: path
@@ -296,21 +297,6 @@ components:
               type: integer
               description: Identificador del expediente en el sistema municipal
 
-    NotificacionNueva:
-      type: object
-      required: [fechaEmision, destinatario, medio]
-      properties:
-        fechaEmision:
-          type: string
-          format: date
-        destinatario:
-          type: string
-          minLength: 1
-        medio:
-          type: string
-          minLength: 1
-          examples: [En mano]
-
     ActaNueva:
       type: object
       description: Acta tal como la envía el celular.
@@ -320,7 +306,6 @@ components:
         - fechaEmision
         - observaciones
         - tipoMedida
-        - notificacion
       properties:
         id:
           type: string
@@ -341,12 +326,10 @@ components:
           type: string
         tipoMedida:
           $ref: '#/components/schemas/TipoMedida'
-        notificacion:
-          $ref: '#/components/schemas/NotificacionNueva'
 
     ActaEmitida:
       type: object
-      required: [id, numero, estado, fechaEmision, fechaHoraRecepcion]
+      required: [id, numero, estado, fechaEmision, fechaRecepcion]
       properties:
         id:
           type: string
@@ -360,6 +343,6 @@ components:
         fechaEmision:
           type: string
           format: date-time
-        fechaHoraRecepcion:
+        fechaRecepcion:
           type: string
           format: date-time

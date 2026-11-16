@@ -10,9 +10,8 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 import { Inspeccion } from '../inspecciones/inspeccion.entity.js';
-import { Expediente } from '../obras/expediente.entity.js';
+import { Expediente } from '../inspecciones/expediente.entity.js';
 import { Fotografia } from './fotografia.entity.js';
-import { Notificacion } from './notificacion.entity.js';
 
 export enum EstadoActa {
   PENDIENTE_ASOCIACION = 'PENDIENTE_ASOCIACION',
@@ -25,17 +24,18 @@ export enum TipoMedida {
   CLAUSURA = 'CLAUSURA',
 }
 
-export enum TipoRelacion {
+export enum TipoActa {
+  ORIGINAL = 'ORIGINAL',
   RECTIFICACION = 'RECTIFICACION',
   ANULACION = 'ANULACION',
 }
 
 // An original acta comes from an inspeccion; a rectification or annulment
-// comes from a previous acta instead.
+// comes from a previous acta (its antecedente) instead.
 @Check(
   'ck_actas_origen',
-  `(tipo_acta IS NULL) = (acta_original_id IS NULL)
-  AND (tipo_acta IS NULL) = (inspeccion_id IS NOT NULL)`,
+  `(tipo_acta = 'ORIGINAL') = (acta_antecedente_id IS NULL)
+  AND (tipo_acta = 'ORIGINAL') = (inspeccion_id IS NOT NULL)`,
 )
 @Entity('actas')
 export class Acta {
@@ -65,7 +65,7 @@ export class Acta {
   fechaEmision: Date;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  fechaHoraRecepcion: Date;
+  fechaRecepcion: Date;
 
   @Column({ type: 'text' })
   observaciones: string;
@@ -73,15 +73,15 @@ export class Acta {
   @Column({ type: 'enum', enum: TipoMedida })
   tipoMedida: TipoMedida;
 
-  @Column({ type: 'enum', enum: TipoRelacion, nullable: true })
-  tipoActa: TipoRelacion | null;
+  @Column({ type: 'enum', enum: TipoActa })
+  tipoActa: TipoActa;
 
   @Column({ type: 'uuid', nullable: true })
-  actaOriginalId: string | null;
+  actaAntecedenteId: string | null;
 
   @ManyToOne(() => Acta)
-  @JoinColumn({ name: 'acta_original_id' })
-  actaOriginal: Acta | null;
+  @JoinColumn({ name: 'acta_antecedente_id' })
+  actaAntecedente: Acta | null;
 
   @Column({
     type: 'enum',
@@ -92,9 +92,4 @@ export class Acta {
 
   @OneToMany(() => Fotografia, (foto) => foto.acta, { cascade: ['insert'] })
   fotografias: Fotografia[];
-
-  @OneToOne(() => Notificacion, (notificacion) => notificacion.acta, {
-    cascade: ['insert'],
-  })
-  notificacion: Notificacion;
 }

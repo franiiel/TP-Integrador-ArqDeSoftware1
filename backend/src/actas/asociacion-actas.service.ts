@@ -10,7 +10,7 @@ import {
   IntegracionExpedientesService,
   RechazoExpedientes,
 } from '../integracion-expedientes/integracion-expedientes.service.js';
-import { ObrasService } from '../obras/obras.service.js';
+import { InspeccionesService } from '../inspecciones/inspecciones.service.js';
 import { Acta, EstadoActa } from './acta.entity.js';
 
 // Associates pending actas with their expediente in the background (ADR: no
@@ -25,8 +25,8 @@ export class AsociacionActasService
 
   constructor(
     @InjectRepository(Acta) private readonly actas: Repository<Acta>,
-    private readonly obrasService: ObrasService,
     private readonly integracion: IntegracionExpedientesService,
+    private readonly inspeccionesService: InspeccionesService,
   ) {}
 
   onApplicationBootstrap() {
@@ -49,7 +49,7 @@ export class AsociacionActasService
         order: { numero: 'ASC' },
       });
       if (pendientes.length === 0) return;
-      const expedientes = await this.obrasService.buscarExpedientes(
+      const expedientes = await this.inspeccionesService.buscarExpedientes(
         pendientes.map((acta) => acta.expedienteId),
       );
 

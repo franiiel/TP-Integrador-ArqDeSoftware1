@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import type { Server } from 'node:http';
@@ -11,12 +11,11 @@ import { AppModule } from '../src/app.module.js';
 import { Acta } from '../src/actas/acta.entity.js';
 import { AsociacionActasService } from '../src/actas/asociacion-actas.service.js';
 import { Fotografia } from '../src/actas/fotografia.entity.js';
-import { Notificacion } from '../src/actas/notificacion.entity.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
 import { configurarApp } from '../src/configurar-app.js';
 import { Inspeccion } from '../src/inspecciones/inspeccion.entity.js';
-import { Expediente } from '../src/obras/expediente.entity.js';
-import { Obra } from '../src/obras/obra.entity.js';
+import { Expediente } from '../src/inspecciones/expediente.entity.js';
+import { Obra } from '../src/inspecciones/obra.entity.js';
 import { Rol, Usuario } from '../src/usuarios/usuario.entity.js';
 import { crearSimulador } from '../../simulador-soap/simulador.js';
 import { TEST_DB, TEST_FOTOS_DIR } from './test-env.js';
@@ -27,6 +26,7 @@ describe('Caso de uso mínimo (e2e)', () => {
   let inspector: Usuario;
   let otroInspector: Usuario;
   let supervisor: Usuario;
+  let administrativo: Usuario;
   let inspeccionPropia: Inspeccion;
   let inspeccionPropia2: Inspeccion;
   let inspeccionAjena: Inspeccion;
@@ -57,7 +57,7 @@ describe('Caso de uso mínimo (e2e)', () => {
         `La app de test apunta a "${String(db.options.database)}"`,
       );
     }
-    [inspector, otroInspector, supervisor] = await db
+    [inspector, otroInspector, supervisor, administrativo] = await db
       .getRepository(Usuario)
       .save([
         {
@@ -83,6 +83,14 @@ describe('Caso de uso mínimo (e2e)', () => {
           rol: Rol.SUPERVISOR,
           cargo: 'Supervisora',
           legajo: '2001',
+        },
+        {
+          auth0Id: 'google-oauth2|administrativo',
+          nombre: 'Pedro Administrativo',
+          email: 'pedro@example.com',
+          rol: Rol.ADMINISTRATIVO,
+          cargo: null,
+          legajo: null,
         },
       ]);
 
@@ -229,11 +237,6 @@ describe('Caso de uso mínimo (e2e)', () => {
       ubicacion: '-34.6037,-58.3816',
       observaciones: 'Obra sin cartel reglamentario',
       tipoMedida: 'INTIMACION',
-      notificacion: {
-        fechaEmision: '2026-11-01',
-        destinatario: 'Juan Pérez',
-        medio: 'En mano',
-      },
     });
 
     const tokens: Record<string, string> = {};
@@ -267,7 +270,7 @@ describe('Caso de uso mínimo (e2e)', () => {
         numero: `${anio}-00001`,
         estado: 'PENDIENTE_ASOCIACION',
         fechaEmision: primera.fechaEmision,
-        fechaHoraRecepcion: expect.any(String),
+        fechaRecepcion: expect.any(String),
       });
 
       const db = app.get(DataSource);
@@ -275,13 +278,15 @@ describe('Caso de uso mínimo (e2e)', () => {
         .getRepository(Fotografia)
         .findBy({ actaId: primera.id });
       expect(fotos).toHaveLength(2);
-      for (const { rutaArchivo } of fotos) {
-        expect(rutaArchivo.startsWith(TEST_FOTOS_DIR)).toBe(true);
-        expect(await readFile(rutaArchivo)).toEqual(foto);
+      const hash = createHash('sha256').update(foto).digest('hex');
+      for (const { refArchivo, hashSha256 } of fotos) {
+        expect(refArchivo.startsWith(TEST_FOTOS_DIR)).toBe(true);
+        expect(await readFile(refArchivo)).toEqual(foto);
+        expect(hashSha256).toBe(hash);
       }
       expect(
-        await db.getRepository(Notificacion).findOneBy({ actaId: primera.id }),
-      ).toMatchObject(primera.notificacion);
+        await db.getRepository(Acta).findOneBy({ id: primera.id }),
+      ).toMatchObject({ tipoActa: 'ORIGINAL', actaAntecedenteId: null });
       expect(
         await db
           .getRepository(Inspeccion)
@@ -423,6 +428,18 @@ describe('Caso de uso mínimo (e2e)', () => {
         numero: acta.numero,
         estado: 'ASOCIADA',
       });
+    });
+
+    it('el administrativo puede consultar cualquier acta', async () => {
+      const [acta] = await app
+        .get(DataSource)
+        .getRepository(Acta)
+        .findBy({ inspeccionId: inspeccionPropia.id });
+      const res = await get(
+        `/api/v1/actas/${acta.id}`,
+        await firmar(administrativo.auth0Id, [Rol.ADMINISTRATIVO]),
+      ).expect(200);
+      expect(res.body).toMatchObject({ id: acta.id, numero: acta.numero });
     });
 
     it('rechaza consultar el acta de otro inspector con 403', async () => {
