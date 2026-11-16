@@ -71,16 +71,15 @@ simulador-soap/    Simulación del sistema municipal de expedientes
 docs/
   openapi.yaml     Contrato de la API (diseño primero)
   diagramas/       Fuentes Mermaid de los diagramas del documento de arquitectura
-docker-compose.yml Servicios de desarrollo (por ahora, PostgreSQL)
+docker-compose.yml Todo el sistema: PostgreSQL, backend, frontend y simulador SOAP
 ```
-
-`frontend/`, `backend/` y `simulador-soap/` todavía no tienen proyecto generado: cada uno tiene un README con lo previsto.
 
 ## Comandos
 
 ```bash
 cp .env.example .env     # completar valores
-pnpm db:up               # levanta PostgreSQL
+docker compose up --build -d   # levanta todo el sistema (ver "Despliegue")
+pnpm db:up               # solo PostgreSQL, para desarrollar con pnpm start:dev / ng serve
 pnpm db:down             # baja los servicios
 pnpm openapi:lint        # valida docs/openapi.yaml
 pnpm openapi:preview     # documentación navegable de la API
@@ -167,6 +166,21 @@ Reglas entre módulos (ADR-04):
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
 - **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
 
+## Despliegue
+
+`docker compose up --build -d` levanta todo en un único servidor:
+
+| Servicio | Puerto | Qué es |
+|---|---|---|
+| `db` | 5432 | PostgreSQL (volumen `db-data`) |
+| `simulador` | 8080 | Simulador SOAP del sistema de expedientes |
+| `backend` | 3000 | API; al arrancar corre las migraciones y la semilla (ambas omiten lo ya hecho). Swagger en `/api/docs` |
+| `frontend` | 4200 | PWA compilada y servida por nginx, que además hace de proxy de `/api` al backend (mismo origen, sin CORS) |
+
+- Las fotos van al volumen `fotos` (`FOTOS_DIR=/fotos`), nunca dentro del contenedor.
+- **Auth0 queda fuera del compose** por ser un servicio externo (ADR-01); es un desvío consciente respecto del requisito de levantar también el proveedor de identidad.
+- Las imágenes se construyen con la raíz del repo como contexto, porque es un workspace de pnpm con un único lockfile.
+
 ## Tests y datos semilla
 
 - **Un test e2e del caso de uso** (`backend/test/caso-uso-minimo.e2e-spec.ts`) contra PostgreSQL real, con tokens firmados localmente en lugar de Auth0. Usa la base `inspecciones_test`, que se recrea en cada corrida; nunca la de desarrollo.
@@ -185,5 +199,4 @@ Reglas entre módulos (ADR-04):
 Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **frená y preguntá** en lugar de asumir:
 
 - Validación del expediente en el sistema municipal al darlo de alta (el alta de expedientes no se implementa).
-- Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
 - Licencia del repositorio.

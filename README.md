@@ -25,9 +25,16 @@ Angular (PWA) · NestJS · PostgreSQL · TypeORM · Auth0 · pnpm
 Requisitos: Node 24, pnpm 10 y Docker.
 
 ```bash
-cp .env.example .env   # completar valores
-pnpm db:up             # levanta PostgreSQL
-pnpm openapi:lint      # valida el contrato de la API
+cp .env.example .env          # completar valores
+docker compose up --build -d  # levanta todo el sistema
 ```
+
+| Servicio | URL |
+|---|---|
+| Aplicación (PWA) | http://localhost:4200 |
+| API y Swagger | http://localhost:3000/api/docs |
+| Simulador SOAP | http://localhost:8080/expedientes |
+
+Para desarrollar sin contenedores, `pnpm db:up` levanta solo PostgreSQL y cada parte se corre con su propio comando (ver el README de cada carpeta). `pnpm openapi:lint` valida el contrato de la API.
 
 Para trabajar en el repo (personas o agentes de código), leer [AGENTS.md](AGENTS.md).
