@@ -68,7 +68,7 @@ Se corre una vez, después de `pnpm migration:run`; si ya hay usuarios cargados,
 
 Los tests e2e levantan la aplicación completa, así que necesitan la base corriendo (`pnpm db:up`).
 
-Módulos previstos (ver `docs/diagramas/c4-componentes-backend.mmd`):
+Módulos previstos:
 `auth`, `usuarios`, `inspecciones` (con obras y expedientes), `actas` e `integracion-expedientes`.
 
 El contrato de la API está en `docs/openapi.yaml` y la implementación debe respetarlo.
