@@ -142,6 +142,7 @@ Reglas entre módulos (ADR-04):
 - **Rectificar o anular es emitir otra acta** con `tipoActa` `RECTIFICACION` o `ANULACION` que referencia a la anterior (`actaOriginalId`); la anterior no cambia. Solo se rectifica o anula un acta `ASOCIADA`, y solo lo hace el supervisor.
 - Un acta original viene de una inspección y no tiene `tipoActa`; una rectificación o anulación no tiene inspección (lo garantiza el `CHECK` `ck_actas_origen`).
 - **Solo el inspector carga actas**, y solo de las inspecciones asignadas a él.
+- Permisos de consulta: el inspector ve solo sus actas; el **supervisor puede consultar cualquier acta** (solo lectura).
 - Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
 - Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
 - La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
