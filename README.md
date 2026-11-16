@@ -35,6 +35,10 @@ docker compose up --build -d  # levanta todo el sistema
 | API y Swagger | http://localhost:3000/api/docs |
 | Simulador SOAP | http://localhost:8080/expedientes |
 
-Para desarrollar sin contenedores, `pnpm db:up` levanta solo PostgreSQL y cada parte se corre con su propio comando (ver el README de cada carpeta). `pnpm openapi:lint` valida el contrato de la API.
+En el `.env` hacen falta como mínimo `POSTGRES_PASSWORD`, `AUTH0_DOMAIN`, `AUTH0_AUDIENCE` y los `sub` de Auth0 del inspector y del supervisor (`SEED_INSPECTOR_AUTH0_ID` y `SEED_SUPERVISOR_AUTH0_ID`). Auth0 es un servicio externo y queda fuera del compose; su configuración está en [backend/README.md](backend/README.md).
+
+Al arrancar, el backend corre las migraciones y carga los datos semilla. Si ya están aplicadas o cargadas, no hace nada. La base vive en el volumen `db-data` y las fotos de las actas en el volumen `fotos`. `docker compose down` baja todo y conserva los datos.
+
+Para desarrollar sin contenedores, `pnpm db:up` levanta solo PostgreSQL y cada parte se corre con su propio comando (ver el README de cada carpeta). Antes hay que bajar el compose completo, porque usa los mismos puertos. `pnpm openapi:lint` valida el contrato de la API.
 
 Para trabajar en el repo (personas o agentes de código), leer [AGENTS.md](AGENTS.md).
