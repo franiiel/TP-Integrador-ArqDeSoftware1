@@ -17,7 +17,7 @@ export class Usuario {
   @Column({ type: 'varchar' })
   nombre: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', unique: true })
   email: string;
 
   @Column({ type: 'enum', enum: Rol })

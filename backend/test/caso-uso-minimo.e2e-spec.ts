@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import { readFile } from 'node:fs/promises';
 import type { Server } from 'node:http';
@@ -11,7 +11,6 @@ import { AppModule } from '../src/app.module.js';
 import { Acta } from '../src/actas/acta.entity.js';
 import { AsociacionActasService } from '../src/actas/asociacion-actas.service.js';
 import { Fotografia } from '../src/actas/fotografia.entity.js';
-import { Notificacion } from '../src/actas/notificacion.entity.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
 import { configurarApp } from '../src/configurar-app.js';
 import { Inspeccion } from '../src/inspecciones/inspeccion.entity.js';
@@ -229,11 +228,6 @@ describe('Caso de uso mínimo (e2e)', () => {
       ubicacion: '-34.6037,-58.3816',
       observaciones: 'Obra sin cartel reglamentario',
       tipoMedida: 'INTIMACION',
-      notificacion: {
-        fechaEmision: '2026-11-01',
-        destinatario: 'Juan Pérez',
-        medio: 'En mano',
-      },
     });
 
     const tokens: Record<string, string> = {};
@@ -267,7 +261,7 @@ describe('Caso de uso mínimo (e2e)', () => {
         numero: `${anio}-00001`,
         estado: 'PENDIENTE_ASOCIACION',
         fechaEmision: primera.fechaEmision,
-        fechaHoraRecepcion: expect.any(String),
+        fechaRecepcion: expect.any(String),
       });
 
       const db = app.get(DataSource);
@@ -275,13 +269,15 @@ describe('Caso de uso mínimo (e2e)', () => {
         .getRepository(Fotografia)
         .findBy({ actaId: primera.id });
       expect(fotos).toHaveLength(2);
-      for (const { rutaArchivo } of fotos) {
-        expect(rutaArchivo.startsWith(TEST_FOTOS_DIR)).toBe(true);
-        expect(await readFile(rutaArchivo)).toEqual(foto);
+      const hash = createHash('sha256').update(foto).digest('hex');
+      for (const { refArchivo, hashSha256 } of fotos) {
+        expect(refArchivo.startsWith(TEST_FOTOS_DIR)).toBe(true);
+        expect(await readFile(refArchivo)).toEqual(foto);
+        expect(hashSha256).toBe(hash);
       }
       expect(
-        await db.getRepository(Notificacion).findOneBy({ actaId: primera.id }),
-      ).toMatchObject(primera.notificacion);
+        await db.getRepository(Acta).findOneBy({ id: primera.id }),
+      ).toMatchObject({ tipoActa: 'ORIGINAL', actaAntecedenteId: null });
       expect(
         await db
           .getRepository(Inspeccion)

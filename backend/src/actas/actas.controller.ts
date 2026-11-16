@@ -23,8 +23,8 @@ const actaEmitida = ({
   numero,
   estado,
   fechaEmision,
-  fechaHoraRecepcion,
-}: Acta) => ({ id, numero, estado, fechaEmision, fechaHoraRecepcion });
+  fechaRecepcion,
+}: Acta) => ({ id, numero, estado, fechaEmision, fechaRecepcion });
 
 @Controller('actas')
 @Roles([Rol.INSPECTOR])

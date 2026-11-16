@@ -19,6 +19,11 @@ export class Fotografia {
   @JoinColumn({ name: 'acta_id' })
   acta: Acta;
 
+  // Path of the file in FOTOS_DIR: photos live outside the database.
   @Column({ type: 'varchar' })
-  rutaArchivo: string;
+  refArchivo: string;
+
+  // Lets anyone check later that the photo was not altered.
+  @Column({ type: 'varchar' })
+  hashSha256: string;
 }
