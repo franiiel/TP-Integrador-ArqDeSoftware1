@@ -384,6 +384,30 @@ describe('Caso de uso mínimo (e2e)', () => {
     });
   });
 
+  describe('permisos del supervisor', () => {
+    it('puede consultar el acta de cualquier inspector', async () => {
+      const [acta] = await app
+        .get(DataSource)
+        .getRepository(Acta)
+        .findBy({ inspeccionId: inspeccionPropia.id });
+      const res = await get(
+        `/api/v1/actas/${acta.id}`,
+        await firmar(supervisor.auth0Id, [Rol.SUPERVISOR]),
+      ).expect(200);
+      expect(res.body).toMatchObject({ id: acta.id, numero: acta.numero });
+    });
+
+    it('no puede emitir actas', async () =>
+      request(app.getHttpServer())
+        .post('/api/v1/actas')
+        .set(
+          'Authorization',
+          `Bearer ${await firmar(supervisor.auth0Id, [Rol.SUPERVISOR])}`,
+        )
+        .field('acta', '{}')
+        .expect(403));
+  });
+
   describe('GET /api/actas/:id', () => {
     it('devuelve número y estado de un acta propia', async () => {
       const [acta] = await app
