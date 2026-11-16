@@ -99,7 +99,9 @@ Una sola aplicación NestJS, un solo proceso, una sola base de datos, organizada
 | `integracion-expedientes` | Adaptador SOAP: asociación de actas y reintentos |
 
 Reglas entre módulos (ADR-04):
-- Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`).
+- Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`). De otro módulo se pueden importar únicamente su `*.module.ts`, sus `*.service.ts`, sus `*.entity.ts` (por las relaciones de TypeORM) y `auth/auth.constants.ts`.
+- `integracion-expedientes` no depende de ningún otro módulo.
+- Estas dos reglas las verifica `pnpm --filter backend lint:deps` (dependency-cruiser, `backend/.dependency-cruiser.mjs`), que también corre dentro de `lint`. Evidencia en `docs/evidencias/nfr-mantenibilidad.md`.
 - Cada módulo es dueño de sus tablas: otro módulo no usa sus repositorios ni consulta sus tablas directamente.
 - **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML. Es la **capa anticorrupción** frente al sistema de expedientes: traduce el acta del dominio al formato SOAP y la respuesta a términos del dominio.
 - **La asociación al expediente es en segundo plano.** `POST /api/v1/actas` guarda el acta en `PENDIENTE_ASOCIACION` y responde sin llamar al SOAP. Un proceso periódico dentro del mismo backend toma las actas pendientes, las asocia y las pasa a `ASOCIADA`; si falla, la reintenta en la próxima vuelta. Esa es toda la política de reintentos: sin colas ni tablas de trabajos.
