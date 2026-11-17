@@ -1,24 +1,29 @@
 /* Estilos globales de la PWA. Pensados primero para el celular, con botones grandes para usar en obra. */
 
 :root {
-  --color-fondo: #f3f5f8;
-  --color-superficie: #ffffff;
-  --color-texto: #1b2430;
-  --color-tenue: #5b6676;
-  --color-borde: #d5dbe3;
-  --color-principal: #1f4e79;
-  --color-principal-oscuro: #163a5a;
-  --color-ok: #1d7a46;
-  --color-ok-fondo: #e3f4ea;
-  --color-alerta: #9a6000;
-  --color-alerta-fondo: #fdf1dc;
-  --color-error: #b3261e;
-  --color-error-fondo: #fbe5e3;
-  --color-neutro-fondo: #e8edf3;
+  --color-fondo: #0f172a;
+  --color-superficie: #1e293b;
+  --color-texto: #e2e8f0;
+  --color-tenue: #94a3b8;
+  --color-borde: #334155;
+  --color-principal: #38bdf8;
+  --color-principal-oscuro: #7dd3fc;
+  --color-ok: #86efac;
+  --color-ok-fondo: #0f3d26;
+  --color-alerta: #fcd34d;
+  --color-alerta-fondo: #422d05;
+  --color-error: #fca5a5;
+  --color-error-fondo: #4c1515;
+  --color-neutro-fondo: #334155;
+  /* Modo oscuro. "principal-oscuro" es el tono de acento para textos y botones apretados (en oscuro va más claro). */
+  --color-barra: #020617;
+  /* Texto sobre los botones principales y el contador (celeste claro: va texto oscuro). */
+  --color-sobre-principal: #0f172a;
   --radio: 10px;
   --alto-nav: 64px;
 
-  color-scheme: light;
+  color-scheme: dark;
+  accent-color: var(--color-principal); /* radios y casillas del formulario */
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 1.45;
@@ -63,7 +68,8 @@ a {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   padding-top: calc(0.75rem + env(safe-area-inset-top));
-  background: var(--color-principal);
+  background: var(--color-barra);
+  border-bottom: 3px solid var(--color-principal);
   color: #fff;
 }
 
@@ -152,7 +158,7 @@ a {
   padding: 0 0.4rem;
   border-radius: 999px;
   background: var(--color-error);
-  color: #fff;
+  color: var(--color-sobre-principal);
   font-size: 0.8rem;
   text-align: center;
 }
@@ -369,7 +375,7 @@ a {
   border: 1px solid var(--color-principal);
   border-radius: var(--radio);
   background: var(--color-principal);
-  color: #fff;
+  color: var(--color-sobre-principal);
   font: inherit;
   font-weight: 600;
   text-decoration: none;
@@ -436,7 +442,7 @@ a {
   border-radius: 8px;
   font: inherit;
   font-size: 16px; /* evita el zoom automático de Safari al enfocar */
-  background: #fff;
+  background: var(--color-fondo);
   color: inherit;
 }
 
@@ -537,4 +543,354 @@ a {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Mis inspecciones: resumen y grupos por día */
+
+.resumen {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.6rem 0.25rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  text-align: center;
+}
+
+.resumen-numero {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--color-principal-oscuro);
+}
+
+.resumen-texto {
+  font-size: 0.8rem;
+  color: var(--color-tenue);
+}
+
+.resumen-item-destacado {
+  border-color: var(--color-principal);
+}
+
+.resumen-item-destacado .resumen-numero {
+  color: var(--color-principal);
+}
+
+.resumen-item-alerta {
+  background: var(--color-alerta-fondo);
+  border-color: var(--color-alerta);
+}
+
+.resumen-item-alerta .resumen-numero,
+.resumen-item-alerta .resumen-texto {
+  color: var(--color-alerta);
+}
+
+.grupo-titulo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+.grupo-fecha {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--color-tenue);
+}
+
+.grupo-fecha::first-letter {
+  text-transform: uppercase;
+}
+
+.grupo-cantidad {
+  margin-left: auto;
+  min-width: 1.6rem;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-neutro-fondo);
+  color: var(--color-principal-oscuro);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Las inspecciones que todavía necesitan acta se marcan con un borde a la izquierda. */
+.tarjeta[data-estado='FALTA_ACTA'] {
+  border-left: 4px solid var(--color-principal);
+}
+
+.tarjeta[data-estado='RECHAZADA'] {
+  border-left: 4px solid var(--color-error);
+}
+
+/* Fondo animado: manchas de luz celeste y violeta que se mueven muy despacio detrás del contenido.
+   Solo anima `transform` (lo resuelve la placa de video, gasta poca batería).
+   Si el celular tiene activado "reducir movimiento", el fondo queda quieto. */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 20% 25%, rgb(56 189 248 / 0.18), transparent 35%),
+    radial-gradient(circle at 80% 30%, rgb(139 92 246 / 0.16), transparent 35%),
+    radial-gradient(circle at 50% 80%, rgb(14 165 233 / 0.12), transparent 40%);
+  animation: fondo-flotar 40s ease-in-out infinite alternate;
+}
+
+@keyframes fondo-flotar {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate(4%, -3%) rotate(8deg) scale(1.08);
+  }
+  100% {
+    transform: translate(-4%, 3%) rotate(-6deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    animation: none;
+  }
+}
+
+/* ===================== Responsive =====================
+   La base de arriba está pensada para el celular (mobile first).
+   Acá se ajusta para celulares muy chicos, tablets y computadoras. */
+
+/* Celulares chicos (menos de 380px de ancho, por ejemplo iPhone SE o Android económicos) */
+@media (max-width: 379px) {
+  .barra {
+    flex-wrap: wrap;
+    padding-inline: 0.75rem;
+  }
+
+  .barra-titulo {
+    font-size: 0.95rem;
+  }
+
+  .contenido {
+    padding: 0.75rem;
+  }
+
+  .tarjeta {
+    padding: 0.85rem;
+  }
+
+  .tarjeta-fila {
+    flex-wrap: wrap;
+  }
+
+  /* Los datos de la tarjeta pasan a una sola columna: etiqueta arriba, valor abajo. */
+  .datos {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .datos dd {
+    margin-bottom: 0.4rem;
+  }
+
+  .resumen-numero {
+    font-size: 1.25rem;
+  }
+
+  .resumen-texto {
+    font-size: 0.72rem;
+  }
+
+  .tarjeta-acciones .boton {
+    flex: 1;
+  }
+}
+
+/* Tablets y computadoras (desde 768px) */
+@media (min-width: 768px) {
+  body {
+    padding-bottom: calc(var(--alto-nav) + 2.5rem + env(safe-area-inset-bottom));
+  }
+
+  .barra {
+    padding-inline: 1.5rem;
+  }
+
+  .contenido {
+    max-width: 1080px;
+    padding: 1.5rem;
+  }
+
+  /* Formularios, detalle y pendientes no conviene estirarlos: quedan centrados a 720px.
+     La lista de inspecciones (la que tiene grupos) usa todo el ancho. */
+  .pagina {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+
+  .pagina:has(.grupo) {
+    max-width: none;
+  }
+
+  .usuario {
+    max-width: 720px;
+    margin-inline: auto;
+  }
+
+  .contenido:has(.grupo) .usuario {
+    max-width: none;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .resumen {
+    max-width: 560px;
+  }
+
+  /* Tarjetas de inspecciones en 2 columnas, todas de la misma altura con los botones abajo. */
+  .grupo {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0.75rem;
+  }
+
+  .grupo-titulo {
+    grid-column: 1 / -1;
+  }
+
+  .grupo .tarjeta {
+    display: flex;
+    flex-direction: column;
+    margin: 0.375rem 0; /* en la grilla los márgenes no se superponen: se usa la mitad */
+  }
+
+  .grupo .tarjeta-acciones {
+    margin-top: auto;
+    padding-top: 0.75rem;
+  }
+
+  .fotos {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .camara-video {
+    max-height: 50dvh;
+  }
+
+  /* El menú de abajo pasa a ser una "píldora" flotante centrada. */
+  .navegacion {
+    left: 50%;
+    right: auto;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    width: min(480px, calc(100% - 2rem));
+    height: var(--alto-nav);
+    padding: 0.35rem;
+    gap: 0.35rem;
+    transform: translateX(-50%);
+    border: 1px solid var(--color-borde);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  }
+
+  .navegacion a {
+    border-radius: 999px;
+  }
+
+  .navegacion a.activo {
+    box-shadow: none;
+    background: var(--color-neutro-fondo);
+  }
+}
+
+/* Computadoras con pantalla ancha (desde 1100px): 3 columnas de tarjetas */
+@media (min-width: 1100px) {
+  .grupo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Con mouse (no en pantallas táctiles): efectos al pasar por encima */
+@media (hover: hover) {
+  .boton:hover {
+    filter: brightness(1.1);
+  }
+
+  .tarjeta {
+    transition: border-color 0.15s;
+  }
+
+  .tarjeta:hover,
+  .tarjeta-enlace:hover {
+    border-color: var(--color-principal);
+  }
+
+  .navegacion a:hover {
+    color: var(--color-texto);
+  }
+}
+
+/* ===================== Ingreso y bienvenida por rol ===================== */
+
+.ingreso-pregunta {
+  margin: 1.5rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.ingreso-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ingreso-roles .boton {
+  margin-top: 0;
+  min-height: 52px;
+  font-size: 1.05rem;
+}
+
+.rol-chip {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.15rem 0.75rem;
+  border-radius: 999px;
+  background: var(--color-neutro-fondo);
+  color: var(--color-principal-oscuro);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rol-funciones {
+  margin: 1.5rem 0 1rem;
+  text-align: left;
+}
+
+.rol-funciones h2 {
+  margin: 0 0 0.5rem;
+}
+
+.rol-funciones ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.rol-funciones li {
+  margin: 0.25rem 0;
 }

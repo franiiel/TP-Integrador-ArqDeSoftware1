@@ -11,7 +11,7 @@ import { MisInspecciones } from './inspecciones/mis-inspecciones';
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'inspecciones' },
   { path: 'ingresar', component: Ingresar, title: 'Ingresar' },
-  { path: 'sin-permiso', component: SinPermiso, title: 'Sin acceso' },
+  { path: 'sin-permiso', component: SinPermiso, title: 'Bienvenida' },
   { path: 'inspecciones', component: MisInspecciones, title: 'Mis inspecciones', canActivate: [soloInspector] },
   { path: 'inspecciones/:id/acta', component: EmitirActa, title: 'Emitir acta', canActivate: [soloInspector] },
   { path: 'pendientes', component: Pendientes, title: 'Pendientes', canActivate: [soloInspector] },

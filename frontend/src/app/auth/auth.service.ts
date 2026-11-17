@@ -3,13 +3,13 @@ import { Injectable, computed, inject, isDevMode, signal } from '@angular/core';
 import { Auth0Client, GenericError } from '@auth0/auth0-spa-js';
 import { firstValueFrom } from 'rxjs';
 import { API_URL, esFallaDeConexion, mensajeDeError } from '../api-client/api-client';
-import { Usuario } from '../api-client/modelos';
+import { Rol, Usuario } from '../api-client/modelos';
 import { STORE_CACHE, borrarTodo, guardar, leer } from '../almacenamiento/base-local';
 import { ColaOfflineService } from '../cola-offline/cola-offline.service';
 import { CONEXION_GOOGLE, CONFIGURACION_AUTH0 } from './configuracion-auth0';
+import { borrarSesionDePrueba, guardarRolDePrueba, leerRolDePrueba } from './sesion-prueba';
 
 const CLAVE_USUARIO = 'usuario';
-const CLAVE_SESION_PRUEBA = 'sesion-prueba';
 
 /** Errores de Auth0 que significan "hay que volver a iniciar sesión" (no se arreglan reintentando). */
 const ERRORES_SESION_VENCIDA = [
@@ -59,11 +59,14 @@ export class AuthService {
     return this.inicio;
   }
 
-  /** Lleva al login de Auth0 con Google. Al volver, la app sigue en `destino`. */
-  async ingresar(destino = '/inspecciones'): Promise<void> {
+  /**
+   * Lleva al login de Auth0 con Google. Al volver, la app sigue en `destino`.
+   * En la sesión de prueba se elige el `rol` (con Auth0 el rol lo asigna el backend y se ignora).
+   */
+  async ingresar(destino = '/inspecciones', rol?: Rol): Promise<void> {
     this.error.set(null);
     if (MODO_PRUEBA) {
-      escribirLocal(CLAVE_SESION_PRUEBA, '1');
+      guardarRolDePrueba(rol ?? leerRolDePrueba() ?? 'INSPECTOR');
       this.autenticado.set(true);
       await this.cargarUsuario();
       return;
@@ -90,7 +93,7 @@ export class AuthService {
     if (this.cliente) {
       await this.cliente.logout({ logoutParams: { returnTo: `${location.origin}/ingresar` } });
     } else {
-      borrarLocal(CLAVE_SESION_PRUEBA);
+      borrarSesionDePrueba();
       // Recargar deja todos los servicios en blanco.
       location.assign('/ingresar');
     }
@@ -142,7 +145,7 @@ export class AuthService {
   private async iniciarSesion(): Promise<void> {
     try {
       if (MODO_PRUEBA) {
-        this.autenticado.set(leerLocal(CLAVE_SESION_PRUEBA) === '1');
+        this.autenticado.set(leerRolDePrueba() !== null);
       } else if (AUTH0_CONFIGURADO) {
         // El constructor no usa la red: sin señal, la sesión guardada sigue valiendo.
         this.cliente = new Auth0Client({
@@ -198,28 +201,4 @@ export class AuthService {
 /** Solo rutas internas de la app, para que nadie pueda armar un link que redirija a otro sitio. */
 export function destinoSeguro(destino: string | null | undefined): string {
   return destino && destino.startsWith('/') && !destino.startsWith('//') ? destino : '/inspecciones';
-}
-
-function leerLocal(clave: string): string | null {
-  try {
-    return localStorage.getItem(clave);
-  } catch {
-    return null;
-  }
-}
-
-function escribirLocal(clave: string, valor: string): void {
-  try {
-    localStorage.setItem(clave, valor);
-  } catch {
-    // Sin localStorage, la sesión de prueba dura hasta recargar.
-  }
-}
-
-function borrarLocal(clave: string): void {
-  try {
-    localStorage.removeItem(clave);
-  } catch {
-    // Nada que borrar.
-  }
 }

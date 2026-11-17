@@ -13,39 +13,71 @@
     <p class="texto-tenue">Lista guardada en el celular · actualizada {{ fecha | date: 'dd/MM HH:mm' }}</p>
   }
 
-  @for (item of items(); track item.inspeccion.id) {
-    @let i = item.inspeccion;
-    @let s = item.situacion;
-    <article class="tarjeta">
-      <div class="tarjeta-fila">
-        <h2 class="tarjeta-titulo">{{ i.obra.direccion }}</h2>
-        <span class="etiqueta" [attr.data-estado]="s.estado">{{ textoEstado[s.estado] }}</span>
-      </div>
-      <dl class="datos">
-        <dt>Fecha</dt>
-        <dd>{{ i.fecha | date: 'EEEE dd/MM/yyyy' }}</dd>
-        <dt>Expediente</dt>
-        <dd>N.º {{ i.expediente.identificadorExterno }}</dd>
-        <dt>Propietario</dt>
-        <dd>{{ i.obra.propietario }}</dd>
-        <dt>Responsable</dt>
-        <dd>{{ i.obra.responsable }}</dd>
-      </dl>
-      <div class="tarjeta-acciones">
-        @switch (s.estado) {
-          @case ('FALTA_ACTA') {
-            <a class="boton" [routerLink]="['/inspecciones', i.id, 'acta']">Emitir acta</a>
-          }
-          @case ('RECHAZADA') {
-            <a class="boton boton-secundario" [routerLink]="['/actas', s.actaId]">Ver motivo</a>
-            <a class="boton" [routerLink]="['/inspecciones', i.id, 'acta']">Emitir de nuevo</a>
-          }
-          @default {
-            <a class="boton boton-secundario" [routerLink]="['/actas', s.actaId]">Ver acta</a>
-          }
+  @if (items().length > 0) {
+    @let r = resumen();
+    <ul class="resumen" aria-label="Resumen">
+      <li class="resumen-item">
+        <span class="resumen-numero">{{ r.hoy }}</span>
+        <span class="resumen-texto">{{ r.hoy === 1 ? 'inspección' : 'inspecciones' }} hoy</span>
+      </li>
+      <li class="resumen-item" [class.resumen-item-destacado]="r.sinActa > 0">
+        <span class="resumen-numero">{{ r.sinActa }}</span>
+        <span class="resumen-texto">sin acta</span>
+      </li>
+      <li class="resumen-item" [class.resumen-item-alerta]="r.sinEnviar > 0">
+        <span class="resumen-numero">{{ r.sinEnviar }}</span>
+        <span class="resumen-texto">sin enviar</span>
+      </li>
+    </ul>
+  }
+
+  @for (grupo of grupos(); track grupo.clave) {
+    <section class="grupo" [attr.aria-labelledby]="'grupo-' + grupo.clave">
+      <h2 class="grupo-titulo" [id]="'grupo-' + grupo.clave">
+        {{ grupo.titulo }}
+        @if (grupo.fecha) {
+          <span class="grupo-fecha">{{ grupo.fecha | date: 'EEEE dd/MM' }}</span>
         }
-      </div>
-    </article>
+        <span class="grupo-cantidad" [attr.aria-label]="grupo.items.length + ' inspecciones'">{{ grupo.items.length }}</span>
+      </h2>
+
+      @for (item of grupo.items; track item.inspeccion.id) {
+        @let i = item.inspeccion;
+        @let s = item.situacion;
+        <article class="tarjeta" [attr.data-estado]="s.estado">
+          <div class="tarjeta-fila">
+            <h3 class="tarjeta-titulo">{{ i.obra.direccion }}</h3>
+            <span class="etiqueta" [attr.data-estado]="s.estado">{{ textoEstado[s.estado] }}</span>
+          </div>
+          <dl class="datos">
+            @if (!grupo.fecha) {
+              <dt>Fecha</dt>
+              <dd>{{ i.fecha | date: 'EEEE dd/MM/yyyy' }}</dd>
+            }
+            <dt>Expediente</dt>
+            <dd>N.º {{ i.expediente.identificadorExterno }}</dd>
+            <dt>Propietario</dt>
+            <dd>{{ i.obra.propietario }}</dd>
+            <dt>Responsable</dt>
+            <dd>{{ i.obra.responsable }}</dd>
+          </dl>
+          <div class="tarjeta-acciones">
+            @switch (s.estado) {
+              @case ('FALTA_ACTA') {
+                <a class="boton" [routerLink]="['/inspecciones', i.id, 'acta']">Emitir acta</a>
+              }
+              @case ('RECHAZADA') {
+                <a class="boton boton-secundario" [routerLink]="['/actas', s.actaId]">Ver motivo</a>
+                <a class="boton" [routerLink]="['/inspecciones', i.id, 'acta']">Emitir de nuevo</a>
+              }
+              @default {
+                <a class="boton boton-secundario" [routerLink]="['/actas', s.actaId]">Ver acta</a>
+              }
+            }
+          </div>
+        </article>
+      }
+    </section>
   } @empty {
     @if (!actualizando()) {
       <p class="vacio">No tenés inspecciones asignadas.</p>

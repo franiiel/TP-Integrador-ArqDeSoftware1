@@ -1,7 +1,8 @@
 import { HttpErrorResponse, HttpInterceptorFn, HttpRequest, HttpResponse } from '@angular/common/http';
 import { isDevMode } from '@angular/core';
 import { Observable, defer, delay, of, throwError } from 'rxjs';
-import { ActaEmitida, ActaNueva, Inspeccion, Usuario } from '../api-client/modelos';
+import { ActaEmitida, ActaNueva, Inspeccion, Rol, Usuario } from '../api-client/modelos';
+import { leerRolDePrueba } from '../auth/sesion-prueba';
 
 /**
  * Backend simulado SOLO PARA DESARROLLO: responde `GET /api/me`, `GET /api/inspecciones`,
@@ -29,14 +30,32 @@ interface EstadoSimulado {
   actas: ActaGuardada[];
 }
 
-/** El usuario que devuelve `GET /api/me` (siempre un inspector). */
-const USUARIO: Usuario = {
-  id: '3b2a1c0d-0000-4000-8000-000000000001',
-  nombre: 'Inspector de prueba',
-  email: 'inspector.prueba@example.com',
-  rol: 'INSPECTOR',
-  cargo: 'Inspector de obras',
-  legajo: '1234',
+/** Los usuarios que devuelve `GET /api/me`, según el rol elegido al ingresar en la sesión de prueba. */
+const USUARIOS: Record<Rol, Usuario> = {
+  INSPECTOR: {
+    id: '3b2a1c0d-0000-4000-8000-000000000001',
+    nombre: 'Inspector de prueba',
+    email: 'inspector.prueba@example.com',
+    rol: 'INSPECTOR',
+    cargo: 'Inspector de obras',
+    legajo: '1234',
+  },
+  SUPERVISOR: {
+    id: '3b2a1c0d-0000-4000-8000-000000000002',
+    nombre: 'Supervisor de prueba',
+    email: 'supervisor.prueba@example.com',
+    rol: 'SUPERVISOR',
+    cargo: 'Supervisor de inspecciones',
+    legajo: '2345',
+  },
+  ADMINISTRATIVO: {
+    id: '3b2a1c0d-0000-4000-8000-000000000003',
+    nombre: 'Administrativo de prueba',
+    email: 'administrativo.prueba@example.com',
+    rol: 'ADMINISTRATIVO',
+    cargo: 'Administrativo de Obras Particulares',
+    legajo: '3456',
+  },
 };
 
 const INSPECCIONES: Inspeccion[] = [
@@ -104,7 +123,7 @@ function responder(req: HttpRequest<unknown>, ruta: string): Observable<HttpResp
   const estado = leerEstado();
 
   if (req.method === 'GET' && ruta === '/api/me') {
-    return ok(200, USUARIO);
+    return ok(200, USUARIOS[leerRolDePrueba() ?? 'INSPECTOR']);
   }
 
   if (req.method === 'GET' && ruta === '/api/inspecciones') {
