@@ -34,7 +34,7 @@ El objetivo del código es **demostrar las decisiones de arquitectura**, no cubr
 
 - Login con Auth0 (Google) y control de acceso por rol.
 - Lista de las inspecciones asignadas al inspector.
-- Formulario del acta: observaciones, fotos con la cámara, ubicación opcional, tipo de medida y notificación.
+- Formulario del acta: observaciones, fotos con la cámara, ubicación opcional y tipo de medida.
 - Guardado offline en el celular y reenvío automático al recuperar la señal (es la restricción central del escenario).
 - Recepción idempotente del acta en el backend y numeración correlativa por año.
 - Asociación al expediente a través del simulador SOAP.
@@ -44,7 +44,7 @@ El objetivo del código es **demostrar las decisiones de arquitectura**, no cubr
 - Asignación de inspecciones, revisión, rectificación y anulación de actas.
 - Pantallas de supervisor y administrativo.
 - Alta de obras y expedientes: se resuelve con **datos semilla**.
-- Registro de auditoría (módulo `auditoria`) y verificación de integridad de las actas.
+- Registro de auditoría y verificación de integridad de las actas (el hash SHA-256 de cada foto sí se guarda).
 - Sincronización en segundo plano con la app cerrada (Background Sync): alcanza con reintentar mientras la app está abierta.
 
 Si una tarea parece requerir algo de esta lista, frená y preguntá antes de implementarlo.
@@ -70,17 +70,15 @@ backend/           API NestJS
 simulador-soap/    Simulación del sistema municipal de expedientes
 docs/
   openapi.yaml     Contrato de la API (diseño primero)
-  diagramas/       Fuentes Mermaid de los diagramas del documento de arquitectura
-docker-compose.yml Servicios de desarrollo (por ahora, PostgreSQL)
+docker-compose.yml Todo el sistema: PostgreSQL, backend, frontend y simulador SOAP
 ```
-
-`frontend/`, `backend/` y `simulador-soap/` todavía no tienen proyecto generado: cada uno tiene un README con lo previsto.
 
 ## Comandos
 
 ```bash
 cp .env.example .env     # completar valores
-pnpm db:up               # levanta PostgreSQL
+docker compose up --build -d   # levanta todo el sistema (ver "Despliegue")
+pnpm db:up               # solo PostgreSQL, para desarrollar con pnpm start:dev / ng serve
 pnpm db:down             # baja los servicios
 pnpm openapi:lint        # valida docs/openapi.yaml
 pnpm openapi:preview     # documentación navegable de la API
@@ -96,16 +94,18 @@ Una sola aplicación NestJS, un solo proceso, una sola base de datos, organizada
 |---|---|
 | `auth` | Valida tokens de Auth0 y verifica roles (guards) |
 | `usuarios` | Cargo y legajo, vinculados al `sub` de Auth0 |
-| `obras` | Obras y expedientes |
-| `inspecciones` | Asignación y consulta de inspecciones |
-| `actas` | Recepción, numeración, fotos, notificación, revisión, rectificación y anulación |
+| `inspecciones` | Asignación y consulta de inspecciones; dueño de obras y expedientes |
+| `actas` | Recepción, numeración, fotos, revisión, rectificación y anulación |
 | `integracion-expedientes` | Adaptador SOAP: asociación de actas y reintentos |
-| `auditoria` | Registro de acciones sobre las actas |
 
 Reglas entre módulos (ADR-04):
-- Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`).
+- Un módulo expone a los demás solo sus servicios públicos (exportados en su `Module`). De otro módulo se pueden importar únicamente su `*.module.ts`, sus `*.service.ts`, sus `*.entity.ts` (por las relaciones de TypeORM) y `auth/auth.constants.ts`.
+- `integracion-expedientes` no depende de ningún otro módulo.
+- Estas dos reglas las verifica `pnpm --filter backend lint:deps` (dependency-cruiser, `backend/.dependency-cruiser.mjs`), que también corre dentro de `lint`. Evidencia en `docs/evidencias/nfr-mantenibilidad.md`.
 - Cada módulo es dueño de sus tablas: otro módulo no usa sus repositorios ni consulta sus tablas directamente.
-- **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML.
+- **Solo `integracion-expedientes` conoce SOAP.** Ningún otro módulo importa librerías SOAP ni arma XML. Es la **capa anticorrupción** frente al sistema de expedientes: traduce el acta del dominio al formato SOAP y la respuesta a términos del dominio.
+- **La asociación al expediente es en segundo plano.** `POST /api/v1/actas` guarda el acta en `PENDIENTE_ASOCIACION` y responde sin llamar al SOAP. Un proceso periódico dentro del mismo backend toma las actas pendientes, las asocia y las pasa a `ASOCIADA`; si falla, la reintenta en la próxima vuelta. Esa es toda la política de reintentos: sin colas ni tablas de trabajos.
+- **Contrato con el sistema de expedientes:** una única operación SOAP, `AsociarActa`, que recibe identificador del expediente, número de acta, fecha de emisión y tipo de medida (ver `simulador-soap/README.md`). El XML se arma a mano con `fetch`, sin librerías SOAP. Un rechazo de negocio (`soap:Fault`, por ejemplo un expediente inexistente) se registra en el log y el acta queda en `PENDIENTE_ASOCIACION`.
 
 ### Frontend: PWA (ADR-02)
 
@@ -135,33 +135,54 @@ Reglas entre módulos (ADR-04):
 
 - **Un acta emitida es inmutable.** No se actualiza ni se borra su contenido. Lo único que cambia es su `estado`.
 - Un acta se considera **emitida cuando el servidor la recibe**.
-- La **fecha legal** del acta es `fechaEmision` (del celular, al labrarla). El servidor guarda además `fechaHoraRecepcion`.
+- La **fecha legal** del acta es `fechaEmision` (del celular, al labrarla). El servidor guarda además `fechaRecepcion`.
 - Estados del acta (asociación al expediente): `PENDIENTE_ASOCIACION` → `ASOCIADA`.
-- **Rectificar o anular es emitir otra acta** con `tipoActa` `RECTIFICACION` o `ANULACION` que referencia a la anterior (`actaOriginalId`); la anterior no cambia. Solo se rectifica o anula un acta `ASOCIADA`, y solo lo hace el supervisor.
-- Un acta original viene de una inspección y no tiene `tipoActa`; una rectificación o anulación no tiene inspección (lo garantiza el `CHECK` `ck_actas_origen`).
+- **Rectificar o anular es emitir otra acta** con `tipoActa` `RECTIFICACION` o `ANULACION` que referencia a la anterior (`actaAntecedenteId`); la anterior no cambia. Solo se rectifica o anula un acta `ASOCIADA`, y solo lo hace el supervisor.
+- Un acta `ORIGINAL` viene de una inspección y no tiene antecedente; una rectificación o anulación no tiene inspección (lo garantiza el `CHECK` `ck_actas_origen`).
 - **Solo el inspector carga actas**, y solo de las inspecciones asignadas a él.
+- Permisos de consulta: el inspector ve solo sus actas; el **supervisor y el administrativo pueden consultar cualquier acta** (solo lectura).
 - Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
 - Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
 - La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
-- Número de acta: **correlativo por año** (`2026-00001`), asignado con la tabla `numeradores_acta` bloqueando la fila del año.
-- Cada acta genera exactamente una notificación (fecha de emisión, destinatario y medio). El sistema no le envía nada al destinatario; solo la registra.
+- Número de acta: **correlativo por año** (`2026-00001`), asignado dentro de la transacción con un lock de PostgreSQL por año (`pg_advisory_xact_lock`) y el máximo número de ese año. El año es el de `fechaEmision` en hora argentina, no el de la recepción.
 
 ## API
 
 **Diseño primero:** `docs/openapi.yaml` es el contrato. Si un cambio afecta la API, **primero se modifica la especificación**, se valida con `pnpm openapi:lint` y después se implementa. El backend debe exponer además Swagger en `/api/docs`.
 
-- Prefijo `/api`, sin versión en la URL.
+- **Versionado por URL:** prefijo `/api/v1` (versionado URI de Nest, `defaultVersion: '1'`, en `backend/src/configurar-app.ts`). Los cambios compatibles van en la misma versión; un cambio incompatible agrega `@Version('2')` al controlador afectado y v1 se mantiene hasta que el frontend migre. Swagger queda en `/api/docs`, sin versión.
+- **Errores con Problem Details** (RFC 9457, `application/problem+json`): `type` siempre `about:blank`, `title` es la frase del código HTTP, `detail` explica el caso e `instance` es la ruta. Los 400 de validación agregan la extensión `errores`. Lo arma un filtro global (`ProblemDetailsFilter`): los controladores solo lanzan las excepciones HTTP de Nest.
 - JSON en camelCase.
-- El acta y sus fotos se envían en **un único `POST /api/actas`** (`multipart/form-data`).
+- El acta y sus fotos se envían en **un único `POST /api/v1/actas`** (`multipart/form-data`).
 
 ## Base de datos
 
 - PostgreSQL con TypeORM. **Identificadores UUID** en todas las tablas.
 - Nombres de tablas y columnas en `snake_case`.
-- El modelo está en `docs/diagramas/modelo-datos.mmd`.
-- Una sola tabla `usuarios` (rol como columna). La medida es la columna `tipo_medida` de `actas`, y una rectificación o anulación es otra fila de `actas` (`tipo_acta`, `acta_original_id`).
+- Una sola tabla `usuarios` (rol como columna). La medida es la columna `tipo_medida` de `actas`, y una rectificación o anulación es otra fila de `actas` (`tipo_acta`, `acta_antecedente_id`).
 - **Migraciones versionadas en el repositorio** (ADR-05). `synchronize` de TypeORM siempre desactivado: todo cambio de entidad lleva su migración.
-- **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda solo la ruta del archivo. La carpeta se configura por variable de entorno y nunca se sube al repositorio.
+- **Las fotos se guardan en una carpeta del servidor**; la tabla `fotografias` guarda la ruta del archivo (`ref_archivo`) y su hash SHA-256 (`hash_sha256`). La carpeta se configura por variable de entorno y nunca se sube al repositorio.
+
+## Despliegue
+
+`docker compose up --build -d` levanta todo en un único servidor:
+
+| Servicio | Puerto | Qué es |
+|---|---|---|
+| `db` | 5432 | PostgreSQL (volumen `db-data`) |
+| `simulador` | 8080 | Simulador SOAP del sistema de expedientes |
+| `backend` | 3000 | API; al arrancar corre las migraciones y la semilla (ambas omiten lo ya hecho). Swagger en `/api/docs` |
+| `frontend` | 4200 | PWA compilada y servida por nginx, que además hace de proxy de `/api` al backend (mismo origen, sin CORS) |
+
+- Las fotos van al volumen `fotos` (`FOTOS_DIR=/fotos`), nunca dentro del contenedor.
+- **Auth0 queda fuera del compose** por ser un servicio externo (ADR-01); es un desvío consciente respecto del requisito de levantar también el proveedor de identidad.
+- Las imágenes se construyen con la raíz del repo como contexto, porque es un workspace de pnpm con un único lockfile.
+
+## Tests y datos semilla
+
+- **Un test e2e del caso de uso** (`backend/test/caso-uso-minimo.e2e-spec.ts`) contra PostgreSQL real, con tokens firmados localmente en lugar de Auth0. Usa la base `inspecciones_test`, que se recrea en cada corrida; nunca la de desarrollo.
+- Tests unitarios solo donde haya lógica que lo justifique, no uno por servicio.
+- **Datos semilla:** `pnpm --filter backend seed` carga un inspector y un supervisor (con los `sub` de Auth0 tomados del `.env`), dos obras con su expediente y dos inspecciones del día.
 
 ## Convenciones de código
 
@@ -174,9 +195,5 @@ Reglas entre módulos (ADR-04):
 
 Estas cuestiones todavía no se decidieron. Si una tarea depende de alguna, **frená y preguntá** en lugar de asumir:
 
-- Integración SOAP: qué datos se envían, si la asociación es sincrónica o en segundo plano, política de reintentos, manejo de rechazos de negocio, validación del expediente al darlo de alta.
-- Diseño del simulador SOAP.
-- Despliegue completo con Docker Compose (por ahora solo PostgreSQL), incluido el volumen de fotos.
-- Datos semilla (obras, expedientes, inspecciones de prueba).
-- Estrategia de tests.
+- Validación del expediente en el sistema municipal al darlo de alta (el alta de expedientes no se implementa).
 - Licencia del repositorio.

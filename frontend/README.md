@@ -12,7 +12,7 @@ pnpm build   # build de producción en dist/ (incluye el service worker)
 El service worker solo se activa en el build de producción, no con `pnpm start`.
 La cámara y la ubicación solo funcionan en HTTPS o en `localhost`.
 
-Componentes previstos (ver `docs/diagramas/c4-componentes-frontend.mmd`):
+Componentes previstos:
 `auth`, `inspecciones`, `acta`, `camara`, `geolocalizacion`, `cola-offline`, `sincronizacion`, `api-client`, `consulta` y el service worker.
 
 ## Pantallas del inspector
