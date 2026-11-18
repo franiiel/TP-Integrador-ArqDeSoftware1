@@ -18,12 +18,16 @@ Angular (PWA) · NestJS · PostgreSQL · TypeORM · Auth0 · pnpm
 | `backend/` | API NestJS (monolito modular) |
 | `simulador-soap/` | Simulación del sistema municipal de expedientes |
 | `docs/openapi.yaml` | Contrato de la API |
+| `docs/adr/` | Registros de decisiones de arquitectura (ADR-01 a ADR-05) |
+| `docs/evidencias/` | Evidencia de la verificación de los NFR |
 
 ## Primeros pasos
 
-Requisitos: Node 24, pnpm 10 y Docker.
+Para desplegar solo hace falta Docker. Para desarrollar, además, Node 24 y pnpm 10.
 
 ```bash
+git clone https://github.com/franiiel/TP-Integrador-ArqDeSoftware1.git inspecciones-obra
+cd inspecciones-obra
 cp .env.example .env          # completar valores
 docker compose up --build -d  # levanta todo el sistema
 ```
