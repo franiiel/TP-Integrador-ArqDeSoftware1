@@ -70,6 +70,8 @@ backend/           API NestJS
 simulador-soap/    Simulación del sistema municipal de expedientes
 docs/
   openapi.yaml     Contrato de la API (diseño primero)
+  adr/             ADR-01 a ADR-05, copia de los del documento de arquitectura
+  evidencias/      Evidencia de la verificación de los NFR
 docker-compose.yml Todo el sistema: PostgreSQL, backend, frontend y simulador SOAP
 ```
 

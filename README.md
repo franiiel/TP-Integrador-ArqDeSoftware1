@@ -18,6 +18,8 @@ Angular (PWA) · NestJS · PostgreSQL · TypeORM · Auth0 · pnpm
 | `backend/` | API NestJS (monolito modular) |
 | `simulador-soap/` | Simulación del sistema municipal de expedientes |
 | `docs/openapi.yaml` | Contrato de la API |
+| `docs/adr/` | Registros de decisiones de arquitectura (ADR-01 a ADR-05) |
+| `docs/evidencias/` | Evidencia de la verificación de los NFR |
 
 ## Primeros pasos
 
