@@ -21,9 +21,11 @@ Angular (PWA) · NestJS · PostgreSQL · TypeORM · Auth0 · pnpm
 
 ## Primeros pasos
 
-Requisitos: Node 24, pnpm 10 y Docker.
+Para desplegar solo hace falta Docker. Para desarrollar, además, Node 24 y pnpm 10.
 
 ```bash
+git clone https://github.com/franiiel/TP-Integrador-ArqDeSoftware1.git inspecciones-obra
+cd inspecciones-obra
 cp .env.example .env          # completar valores
 docker compose up --build -d  # levanta todo el sistema
 ```
