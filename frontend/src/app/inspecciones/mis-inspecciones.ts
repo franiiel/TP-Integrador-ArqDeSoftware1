@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, OnInit, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Inspeccion } from '../api-client/modelos';
+import { AuthService } from '../auth/auth.service';
 import { ColaOfflineService } from '../cola-offline/cola-offline.service';
 import { SituacionInspeccion, TEXTO_ESTADO, situacionDe } from './estado-inspeccion';
 import { InspeccionesService } from './inspecciones.service';
@@ -48,6 +49,7 @@ function fechaLocal(dias = 0): string {
 export class MisInspecciones implements OnInit {
   private readonly servicio = inject(InspeccionesService);
   private readonly cola = inject(ColaOfflineService);
+  protected readonly usuario = inject(AuthService).usuario;
 
   protected readonly textoEstado = TEXTO_ESTADO;
   protected readonly actualizando = this.servicio.actualizando;
@@ -95,6 +97,17 @@ export class MisInspecciones implements OnInit {
       sinEnviar: items.filter((item) => item.situacion.estado === 'PENDIENTE').length,
     };
   });
+
+  /** Saludo según la hora del celular, como en el diseño ObraClara. */
+  protected readonly saludo = computed(() => {
+    const hora = new Date().getHours();
+    return hora < 13 ? '¡Buen día!' : hora < 20 ? '¡Buenas tardes!' : '¡Buenas noches!';
+  });
+
+  /** Números del resumen con dos cifras ("02"), como en el diseño. */
+  protected dosCifras(n: number): string {
+    return String(n).padStart(2, '0');
+  }
 
   ngOnInit(): void {
     void this.servicio.actualizar();

@@ -21,6 +21,8 @@ export class App {
   protected readonly enLinea = this.sincronizacion.enLinea;
   protected readonly cantidadPendientes = computed(() => this.cola.noEnviadas().length);
   protected readonly esInspector = computed(() => this.auth.usuario()?.rol === 'INSPECTOR');
+  /** Inicial del nombre del usuario, para el círculo de la barra. */
+  protected readonly inicial = computed(() => (this.auth.usuario()?.nombre.trim().charAt(0) ?? '').toUpperCase());
 
   protected async salir(): Promise<void> {
     const pendientes = this.cola.paraEnviar().length;

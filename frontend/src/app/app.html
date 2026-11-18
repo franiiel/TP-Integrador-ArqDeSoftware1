@@ -1,15 +1,29 @@
 <header class="barra">
-  <span class="barra-titulo">
-    Inspecciones de obra
+  <a class="marca" routerLink="/inspecciones" aria-label="ObraClara, ir al inicio">
+    <span class="marca-icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 21h18" />
+        <path d="M5 21V7l7-4 7 4v14" />
+        <path d="M9 21v-6h6v6" />
+        <path d="M9 9h.01M15 9h.01" />
+      </svg>
+    </span>
+    <span>
+      <span class="marca-nombre">Obra<span>Clara</span></span>
+      <span class="marca-subtitulo">GESTIÓN DE INSPECCIONES</span>
+    </span>
+  </a>
+
+  <span class="barra-derecha">
     @if (backendSimulado) {
       <span class="simulado" title="Datos de prueba: el backend está simulado en el frontend">Datos de prueba</span>
     }
-  </span>
-  <span class="barra-derecha">
     <span class="conexion" [class.conexion-sin-senal]="!enLinea()" role="status">
-      {{ enLinea() ? 'Con señal' : 'Sin señal' }}
+      <span class="conexion-punto" aria-hidden="true"></span>
+      <span class="conexion-texto">{{ enLinea() ? 'Conectado' : 'Sin señal' }}</span>
     </span>
     @if (auth.usuario(); as usuario) {
+      <span class="avatar" [title]="usuario.nombre" aria-hidden="true">{{ inicial() }}</span>
       <button type="button" class="barra-salir" (click)="salir()" [attr.aria-label]="'Cerrar sesión de ' + usuario.nombre">
         Salir
       </button>
@@ -25,26 +39,34 @@
 }
 
 <main class="contenido">
-  @if (esInspector()) {
-    @if (auth.usuario(); as usuario) {
-      <p class="usuario texto-tenue">
-        {{ usuario.nombre }}
-        @if (usuario.legajo) {
-          · Legajo {{ usuario.legajo }}
-        }
-      </p>
-    }
-  }
   <router-outlet />
 </main>
 
 @if (esInspector()) {
   <nav class="navegacion" aria-label="Secciones">
-    <a routerLink="/inspecciones" routerLinkActive="activo" ariaCurrentWhenActive="page">Mis inspecciones</a>
+    <a routerLink="/inspecciones" routerLinkActive="activo" ariaCurrentWhenActive="page">
+      <span class="nav-icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3h8l4 4v14H4V3z" />
+          <path d="M8 3v5h8V3M8 14h8M8 18h5" />
+        </svg>
+      </span>
+      Inspecciones
+    </a>
     <a routerLink="/pendientes" routerLinkActive="activo" ariaCurrentWhenActive="page">
+      <span class="nav-icono" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7v5h-5" />
+          <path d="M4 17v-5h5" />
+          <path d="M5.6 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.4-3" />
+        </svg>
+        @if (cantidadPendientes() > 0) {
+          <span class="contador">{{ cantidadPendientes() }}</span>
+        }
+      </span>
       Pendientes
       @if (cantidadPendientes() > 0) {
-        <span class="contador" [attr.aria-label]="cantidadPendientes() + ' sin enviar'">{{ cantidadPendientes() }}</span>
+        <span class="sr-only">({{ cantidadPendientes() }} sin enviar)</span>
       }
     </a>
   </nav>

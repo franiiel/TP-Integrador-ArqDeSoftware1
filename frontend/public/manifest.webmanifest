@@ -1,9 +1,9 @@
 {
-  "name": "Inspecciones de obra",
-  "short_name": "Inspecciones",
+  "name": "ObraClara · Inspecciones de obra",
+  "short_name": "ObraClara",
   "lang": "es-AR",
-  "theme_color": "#020617",
-  "background_color": "#0f172a",
+  "theme_color": "#ffffff",
+  "background_color": "#f8faf7",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",

@@ -9,15 +9,17 @@ import { AUTH0_CONFIGURADO, AuthService, MODO_PRUEBA, destinoSeguro } from './au
   selector: 'app-ingresar',
   template: `
     <section class="pagina pagina-ingreso">
-      <!-- Ícono propio: casco de obra (reemplaza el logo de Angular) -->
-      <svg class="ingreso-logo" viewBox="0 0 64 64" width="88" height="88" aria-hidden="true">
-        <rect width="64" height="64" rx="16" fill="var(--color-superficie)" />
-        <path d="M14 42a18 18 0 0 1 36 0z" fill="var(--color-principal)" />
-        <path d="M28 24.5V18h8v6.5" fill="none" stroke="var(--color-principal-oscuro)" stroke-width="3" stroke-linejoin="round" />
-        <rect x="10" y="41" width="44" height="6" rx="3" fill="var(--color-principal-oscuro)" />
-      </svg>
-      <h1>Inspecciones de obra</h1>
-      <p class="texto-tenue">Dirección de Obras Particulares</p>
+      <!-- Marca ObraClara (diseño de Maite) -->
+      <span class="marca-icono ingreso-logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18" />
+          <path d="M5 21V7l7-4 7 4v14" />
+          <path d="M9 21v-6h6v6" />
+          <path d="M9 9h.01M15 9h.01" />
+        </svg>
+      </span>
+      <h1 class="marca-nombre ingreso-titulo">Obra<span>Clara</span></h1>
+      <p class="texto-tenue">Gestión de inspecciones · Dirección de Obras Particulares</p>
 
       @if (auth.error(); as mensaje) {
         <p class="aviso aviso-error" role="alert">{{ mensaje }}</p>

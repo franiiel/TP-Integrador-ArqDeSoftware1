@@ -10,11 +10,11 @@ import { MisInspecciones } from './inspecciones/mis-inspecciones';
 // Las pantallas se cargan junto con la app (sin lazy loading) para que estén disponibles sin señal.
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'inspecciones' },
-  { path: 'ingresar', component: Ingresar, title: 'Ingresar' },
-  { path: 'sin-permiso', component: SinPermiso, title: 'Bienvenida' },
-  { path: 'inspecciones', component: MisInspecciones, title: 'Mis inspecciones', canActivate: [soloInspector] },
-  { path: 'inspecciones/:id/acta', component: EmitirActa, title: 'Emitir acta', canActivate: [soloInspector] },
-  { path: 'pendientes', component: Pendientes, title: 'Pendientes', canActivate: [soloInspector] },
-  { path: 'actas/:id', component: DetalleActa, title: 'Acta', canActivate: [soloInspector] },
+  { path: 'ingresar', component: Ingresar, title: 'Ingresar · ObraClara' },
+  { path: 'sin-permiso', component: SinPermiso, title: 'Bienvenida · ObraClara' },
+  { path: 'inspecciones', component: MisInspecciones, title: 'Mis inspecciones · ObraClara', canActivate: [soloInspector] },
+  { path: 'inspecciones/:id/acta', component: EmitirActa, title: 'Emitir acta · ObraClara', canActivate: [soloInspector] },
+  { path: 'pendientes', component: Pendientes, title: 'Pendientes · ObraClara', canActivate: [soloInspector] },
+  { path: 'actas/:id', component: DetalleActa, title: 'Acta · ObraClara', canActivate: [soloInspector] },
   { path: '**', redirectTo: 'inspecciones' },
 ];
