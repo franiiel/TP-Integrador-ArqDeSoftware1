@@ -8,7 +8,7 @@ import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module.js';
-import { Acta } from '../src/actas/acta.entity.js';
+import { Acta, TipoActa, TipoMedida } from '../src/actas/acta.entity.js';
 import { AsociacionActasService } from '../src/actas/asociacion-actas.service.js';
 import { Fotografia } from '../src/actas/fotografia.entity.js';
 import { JWKS, ROLES_CLAIM } from '../src/auth/auth.constants.js';
@@ -458,5 +458,70 @@ describe('Caso de uso mínimo (e2e)', () => {
         `/api/v1/actas/${randomUUID()}`,
         await firmar(inspector.auth0Id, [Rol.INSPECTOR]),
       ).expect(404));
+  });
+
+  describe('integridad del acta emitida', () => {
+    const actas = () => app.get(DataSource).getRepository(Acta);
+    let original: Acta;
+    beforeAll(async () => {
+      original = await actas().findOneByOrFail({
+        inspeccionId: inspeccionPropia.id,
+      });
+    });
+
+    const derivada = (cambios: object) => ({
+      id: randomUUID(),
+      numero: '2026-90001',
+      inspeccionId: null,
+      expedienteId: original.expedienteId,
+      fechaEmision: new Date(),
+      observaciones: 'Rectifica la medida',
+      tipoMedida: TipoMedida.NINGUNA,
+      tipoActa: TipoActa.RECTIFICACION,
+      actaAntecedenteId: original.id,
+      ...cambios,
+    });
+
+    it.each(['put', 'patch', 'delete'] as const)(
+      'rechaza %s sobre el acta con cualquier rol y el acta no cambia',
+      async (metodo) => {
+        for (const { auth0Id, rol } of [
+          inspector,
+          supervisor,
+          administrativo,
+        ]) {
+          await request(app.getHttpServer())
+            [metodo](`/api/v1/actas/${original.id}`)
+            .set('Authorization', `Bearer ${await firmar(auth0Id, [rol])}`)
+            .send({ observaciones: 'Texto cambiado' })
+            .expect(404);
+        }
+        expect(await actas().findOneBy({ id: original.id })).toEqual(original);
+      },
+    );
+
+    it('la base rechaza un acta original sin inspección', () =>
+      expect(
+        actas().insert(
+          derivada({ tipoActa: TipoActa.ORIGINAL, actaAntecedenteId: null }),
+        ),
+      ).rejects.toMatchObject({
+        driverError: { code: '23514', constraint: 'ck_actas_origen' },
+      }));
+
+    it('la base rechaza un tipo de medida fuera de NINGUNA, INTIMACION o CLAUSURA', () =>
+      expect(
+        actas().insert(derivada({ tipoMedida: 'MULTA' })),
+      ).rejects.toMatchObject({ driverError: { code: '22P02' } }));
+
+    it('una rectificación es otra acta vinculada y la original queda igual', async () => {
+      const rectificacion = derivada({});
+      await actas().insert(rectificacion);
+      expect(await actas().findOneBy({ id: rectificacion.id })).toMatchObject({
+        actaAntecedenteId: original.id,
+        tipoActa: 'RECTIFICACION',
+      });
+      expect(await actas().findOneBy({ id: original.id })).toEqual(original);
+    });
   });
 });
