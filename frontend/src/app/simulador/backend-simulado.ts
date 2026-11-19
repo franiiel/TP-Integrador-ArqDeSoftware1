@@ -98,7 +98,7 @@ const ESTADO_INICIAL: EstadoSimulado = {
       numero: `${new Date().getFullYear()}-00001`,
       estado: 'ASOCIADA',
       fechaEmision: `${hoyMasDias(-1)}T15:20:00.000Z`,
-      fechaHoraRecepcion: `${hoyMasDias(-1)}T15:21:10.000Z`,
+      fechaRecepcion: `${hoyMasDias(-1)}T15:21:10.000Z`,
       recibidaEnMs: 0,
     },
   ],
@@ -184,7 +184,7 @@ function recibirActa(req: HttpRequest<unknown>, estado: EstadoSimulado): Observa
     numero: `${ahora.getFullYear()}-${String(numero).padStart(5, '0')}`,
     estado: 'PENDIENTE_ASOCIACION',
     fechaEmision: acta.fechaEmision,
-    fechaHoraRecepcion: ahora.toISOString(),
+    fechaRecepcion: ahora.toISOString(),
     recibidaEnMs: ahora.getTime(),
   };
   guardarEstado({ ultimoNumero: numero, actas: [...estado.actas, guardada] });
@@ -199,7 +199,7 @@ function publica(acta: ActaGuardada): ActaEmitida {
     numero: acta.numero,
     estado: asociada ? 'ASOCIADA' : 'PENDIENTE_ASOCIACION',
     fechaEmision: acta.fechaEmision,
-    fechaHoraRecepcion: acta.fechaHoraRecepcion,
+    fechaRecepcion: acta.fechaRecepcion,
   };
 }
 

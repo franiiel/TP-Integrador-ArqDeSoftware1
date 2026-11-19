@@ -63,7 +63,7 @@ export interface ActaEmitida {
   numero: string;
   estado: EstadoActa;
   fechaEmision: string;
-  fechaHoraRecepcion: string;
+  fechaRecepcion: string;
 }
 
 export interface ErrorApi {
