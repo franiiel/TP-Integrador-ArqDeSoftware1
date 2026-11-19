@@ -6,7 +6,7 @@ import { API_URL, esFallaDeConexion, mensajeDeError } from '../api-client/api-cl
 import { Rol, Usuario } from '../api-client/modelos';
 import { STORE_CACHE, borrarTodo, guardar, leer } from '../almacenamiento/base-local';
 import { ColaOfflineService } from '../cola-offline/cola-offline.service';
-import { CONEXION_GOOGLE, CONFIGURACION_AUTH0 } from './configuracion-auth0';
+import { CONFIGURACION_AUTH0 } from './configuracion-auth0';
 import { borrarSesionDePrueba, guardarRolDePrueba, leerRolDePrueba } from './sesion-prueba';
 
 const CLAVE_USUARIO = 'usuario';
@@ -30,7 +30,7 @@ interface EstadoRedireccion {
 }
 
 /**
- * Sesión del usuario (componente `auth`, ADR-01): login con Google a través de Auth0,
+ * Sesión del usuario (componente `auth`, ADR-01): login a través de Auth0 (Google o usuario y contraseña),
  * renovación del token con refresh tokens rotativos y datos del usuario (`GET /api/me`).
  * Los datos del usuario quedan guardados en el celular para poder abrir la app sin señal.
  */
@@ -60,7 +60,7 @@ export class AuthService {
   }
 
   /**
-   * Lleva al login de Auth0 con Google. Al volver, la app sigue en `destino`.
+   * Lleva al login de Auth0 (Google o usuario y contraseña). Al volver, la app sigue en `destino`.
    * En la sesión de prueba se elige el `rol` (con Auth0 el rol lo asigna el backend y se ignora).
    */
   async ingresar(destino = '/inspecciones', rol?: Rol): Promise<void> {
@@ -76,7 +76,6 @@ export class AuthService {
       return;
     }
     await this.cliente.loginWithRedirect<EstadoRedireccion>({
-      authorizationParams: { connection: CONEXION_GOOGLE },
       appState: { destino: destinoSeguro(destino) },
     });
   }

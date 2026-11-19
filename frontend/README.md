@@ -38,16 +38,16 @@ Mientras el backend no tenga los endpoints, `src/app/simulador/backend-simulado.
 
 - Solo funciona con `pnpm start`; el build de producción usa siempre el backend real.
 - Lo recibido se guarda en `localStorage` (clave `backend-simulado`); borrala para empezar de cero.
-- Respeta el contrato: 201 la primera vez, 200 si se reenvía el mismo UUID, 409 si la inspección ya tiene acta, 400 si faltan fotos o datos. A los 30 segundos de recibida, el acta pasa a "asociada al expediente".
+- Respeta el contrato: 201 la primera vez, 200 si se reenvía el mismo UUID, 409 si la inspección ya tiene acta, 400 si hay más de 10 fotos o faltan datos. A los 30 segundos de recibida, el acta pasa a "asociada al expediente".
 - Con "Offline" en las herramientas del navegador (pestaña Network) responde como si no hubiera señal.
-- Cuando el backend tenga los endpoints: `USAR_BACKEND_SIMULADO = false` en ese archivo, o borrar la carpeta `simulador`.
+- Está apagado (`USAR_BACKEND_SIMULADO = false`) porque el backend real ya tiene los endpoints; ponerlo en `true` para probar el front sin backend.
 
 ## Inicio de sesión (Auth0, ADR-01)
 
 Código en `src/app/auth/`: `auth.service.ts` (sesión), `guards.ts` (rol), `ingresar.ts` y `sin-permiso.ts` (pantallas).
 
 - Se usa el SDK `@auth0/auth0-spa-js` con *refresh tokens* con rotación guardados en el navegador, para que la sesión siga abierta sin señal y el token se renueve solo.
-- El rol y los datos del usuario se piden a `GET /api/me` y quedan guardados en el celular. Solo el rol `INSPECTOR` entra a las pantallas; los demás ven "Sin acceso".
+- El rol y los datos del usuario se piden a `GET /api/v1/me` y quedan guardados en el celular. Solo el rol `INSPECTOR` entra a las pantallas; los demás ven "Sin acceso".
 - Si la sesión vence, las actas siguen guardadas y aparece un aviso para volver a ingresar.
 - Al cerrar sesión se borra lo guardado en el celular. No se permite con actas pendientes de envío.
 
@@ -62,5 +62,5 @@ Código en `src/app/auth/`: `auth.service.ts` (sesión), `guards.ts` (rol), `ing
    - Allowed Web Origins: `http://localhost:4200`
    - *Refresh Token Rotation*: activado.
    - Agregar las direcciones HTTPS que se usen para probar en el celular.
-3. **Authentication → Social → Google** habilitado para esa aplicación.
+3. **Authentication → Social → Google** y **Authentication → Database** (usuarios de prueba con contraseña) habilitados para esa aplicación.
 4. Completar `domain`, `clientId` y `audience` en `src/app/auth/configuracion-auth0.ts`.

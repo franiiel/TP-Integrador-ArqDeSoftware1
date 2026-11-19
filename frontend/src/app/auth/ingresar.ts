@@ -54,7 +54,7 @@ import { AUTH0_CONFIGURADO, AuthService, MODO_PRUEBA, destinoSeguro } from './au
               Sesión de prueba: Auth0 todavía no está configurado, así que en desarrollo se elige el rol sin login real.
             </p>
           } @else {
-            <button type="button" class="boton boton-principal" (click)="ingresar()">Ingresar con Google</button>
+            <button type="button" class="boton boton-principal" (click)="ingresar()">Ingresar</button>
           }
           @if (!enLinea()) {
             <p class="aviso aviso-alerta" role="status">Sin señal: para ingresar hace falta conexión.</p>

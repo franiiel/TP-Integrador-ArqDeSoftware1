@@ -7,6 +7,3 @@ export const CONFIGURACION_AUTH0 = {
   clientId: 'tDO2NF7dNhkq62JhO1c0pGvf0tYc3vcH',
   audience: 'https://inspecciones-obra/api',
 };
-
-/** Conexión de Auth0 para ingresar con la cuenta de Google. */
-export const CONEXION_GOOGLE = 'google-oauth2';
