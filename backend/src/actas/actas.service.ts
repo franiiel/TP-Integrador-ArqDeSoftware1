@@ -51,8 +51,8 @@ export class ActasService {
       usuario,
       nueva.inspeccionId,
     );
-    if (fotos.length < 1 || fotos.length > 10) {
-      throw new BadRequestException('El acta debe tener entre 1 y 10 fotos');
+    if (fotos.length > 10) {
+      throw new BadRequestException('El acta debe tener como máximo 10 fotos');
     }
     if (fotos.some((foto) => !TIPOS_FOTO[foto.mimetype])) {
       throw new BadRequestException('Las fotos deben ser JPEG o PNG');

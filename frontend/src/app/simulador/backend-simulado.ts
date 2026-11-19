@@ -170,8 +170,8 @@ function recibirActa(req: HttpRequest<unknown>, estado: EstadoSimulado): Observa
   if (estado.actas.some((a) => a.inspeccionId === acta.inspeccionId)) {
     return error(409, 'La inspección ya tiene un acta emitida', 'Conflict');
   }
-  if (fotos.length < 1 || fotos.length > 10) {
-    return error(400, 'El acta debe tener entre 1 y 10 fotos', 'Bad Request');
+  if (fotos.length > 10) {
+    return error(400, 'El acta debe tener como máximo 10 fotos', 'Bad Request');
   }
   if (!acta.observaciones?.trim() || !acta.notificacion?.destinatario?.trim()) {
     return error(400, 'Faltan datos obligatorios del acta', 'Bad Request');

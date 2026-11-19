@@ -222,7 +222,7 @@ components:
         detail:
           type: string
           description: Explicación legible de este caso concreto
-          examples: [El acta debe tener entre 1 y 10 fotos]
+          examples: [El acta debe tener como máximo 10 fotos]
         instance:
           type: string
           format: uri-reference

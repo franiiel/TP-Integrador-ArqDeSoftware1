@@ -17,7 +17,6 @@ import { Inspeccion } from '../src/inspecciones/inspeccion.entity.js';
 import { Expediente } from '../src/inspecciones/expediente.entity.js';
 import { Obra } from '../src/inspecciones/obra.entity.js';
 import { Rol, Usuario } from '../src/usuarios/usuario.entity.js';
-import { crearSimulador } from '../../simulador-soap/simulador.js';
 import { TEST_DB, TEST_FOTOS_DIR } from './test-env.js';
 
 describe('Caso de uso mínimo (e2e)', () => {
@@ -314,10 +313,15 @@ describe('Caso de uso mínimo (e2e)', () => {
     it('rechaza el acta de una inspección asignada a otro inspector con 403', () =>
       enviar(actaNueva(inspeccionAjena.id)).expect(403));
 
-    it('rechaza un acta sin fotos con 400', () =>
-      enviar(actaNueva(inspeccionAjena.id), 0, otroInspector.auth0Id).expect(
-        400,
-      ));
+    it('acepta un acta sin fotos', async () => {
+      const res = await enviar(
+        actaNueva(inspeccionAjena.id),
+        0,
+        otroInspector.auth0Id,
+      ).expect(201);
+
+      await app.get(DataSource).getRepository(Acta).delete(res.body.id);
+    });
 
     it('rechaza un acta con datos inválidos con 400 y la lista de errores', async () => {
       const res = await enviar(
@@ -375,6 +379,9 @@ describe('Caso de uso mínimo (e2e)', () => {
     });
 
     it('asocia las pendientes y deja pendiente la de un expediente rechazado', async () => {
+      const { crearSimulador } = await import(
+        new URL('../../simulador-soap/simulador.ts', import.meta.url).href
+      );
       simulador = crearSimulador().listen(
         Number(new URL(process.env.EXPEDIENTES_SOAP_URL!).port),
       );

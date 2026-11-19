@@ -10,7 +10,7 @@ import { situacionDe } from '../inspecciones/estado-inspeccion';
 import { InspeccionesService } from '../inspecciones/inspecciones.service';
 import { SincronizacionService } from '../sincronizacion/sincronizacion.service';
 
-export const MIN_FOTOS = 1;
+export const MIN_FOTOS = 0;
 export const MAX_FOTOS = 10;
 
 interface Foto {
