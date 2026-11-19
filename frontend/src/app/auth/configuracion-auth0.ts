@@ -1,16 +1,12 @@
+
 /**
- * Datos de la aplicación registrada en Auth0. No son secretos: una SPA los expone igual en el navegador.
- * Se completan con los valores del panel de Auth0 (ver frontend/README.md).
- * Mientras tengan "COMPLETAR", en desarrollo se usa una sesión de prueba sin Auth0.
+ * Datos de la aplicación registrada en Auth0.
  */
 export const CONFIGURACION_AUTH0 = {
-  /** Applications → la SPA → Domain. Ejemplo: `inspecciones-obra.us.auth0.com`. */
-  domain: 'COMPLETAR.us.auth0.com',
-  /** Applications → la SPA → Client ID. */
-  clientId: 'COMPLETAR',
-  /** APIs → la API del backend → Identifier. El backend valida esta misma audiencia. */
-  audience: 'COMPLETAR',
+  domain: 'inspecciones-obras.us.auth0.com',
+  clientId: 'tDO2NF7dNhkq62JhO1c0pGvf0tYc3vcH',
+  audience: 'https://inspecciones-obra/api',
 };
 
-/** Conexión de Auth0 para ingresar con la cuenta de Google (ADR-01). */
+/** Conexión de Auth0 para ingresar con la cuenta de Google. */
 export const CONEXION_GOOGLE = 'google-oauth2';
