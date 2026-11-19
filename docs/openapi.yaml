@@ -92,13 +92,12 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [acta, fotos]
+              required: [acta]
               properties:
                 acta:
                   $ref: '#/components/schemas/ActaNueva'
                 fotos:
                   type: array
-                  minItems: 1
                   maxItems: 10
                   description: Fotos tomadas con la cámara dentro de la app.
                   items:
@@ -173,7 +172,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Token de acceso emitido por Auth0 (login con Google).
+      description: Token de acceso emitido por Auth0 (login con Google o usuario y contraseña).
 
   responses:
     NoAutenticado:

@@ -5,12 +5,11 @@ import { ActaEmitida, ActaNueva, Inspeccion, Rol, Usuario } from '../api-client/
 import { leerRolDePrueba } from '../auth/sesion-prueba';
 
 /**
- * Backend simulado SOLO PARA DESARROLLO: responde `GET /api/me`, `GET /api/inspecciones`,
- * `POST /api/actas` y `GET /api/actas/:id` según docs/openapi.yaml, sin llamar al backend real.
- * Nunca se activa en el build de producción.
- * Cuando el backend tenga esos endpoints, poner esto en `false` (o borrar la carpeta `simulador`).
+ * Backend simulado SOLO PARA DESARROLLO: responde `GET /api/v1/me`, `GET /api/v1/inspecciones`,
+ * `POST /api/v1/actas` y `GET /api/v1/actas/:id` según docs/openapi.yaml, sin llamar al backend real.
+ * Nunca se activa en el build de producción. Apagado: el backend real ya tiene esos endpoints.
  */
-const USAR_BACKEND_SIMULADO = true;
+const USAR_BACKEND_SIMULADO = false;
 
 export const BACKEND_SIMULADO_ACTIVO = USAR_BACKEND_SIMULADO && isDevMode();
 
@@ -122,11 +121,11 @@ export const backendSimulado: HttpInterceptorFn = (req, next) => {
 function responder(req: HttpRequest<unknown>, ruta: string): Observable<HttpResponse<unknown>> {
   const estado = leerEstado();
 
-  if (req.method === 'GET' && ruta === '/api/me') {
+  if (req.method === 'GET' && ruta === '/api/v1/me') {
     return ok(200, USUARIOS[leerRolDePrueba() ?? 'INSPECTOR']);
   }
 
-  if (req.method === 'GET' && ruta === '/api/inspecciones') {
+  if (req.method === 'GET' && ruta === '/api/v1/inspecciones') {
     const lista = INSPECCIONES.map((i) => ({
       ...i,
       actaId: estado.actas.find((a) => a.inspeccionId === i.id)?.id ?? null,
@@ -134,13 +133,13 @@ function responder(req: HttpRequest<unknown>, ruta: string): Observable<HttpResp
     return ok(200, lista);
   }
 
-  const actaPorId = /^\/api\/actas\/([^/]+)$/.exec(ruta);
+  const actaPorId = /^\/api\/v1\/actas\/([^/]+)$/.exec(ruta);
   if (req.method === 'GET' && actaPorId) {
     const acta = estado.actas.find((a) => a.id === decodeURIComponent(actaPorId[1]));
     return acta ? ok(200, publica(acta)) : error(404, 'El acta no existe', 'Not Found');
   }
 
-  if (req.method === 'POST' && ruta === '/api/actas') {
+  if (req.method === 'POST' && ruta === '/api/v1/actas') {
     return recibirActa(req, estado);
   }
 

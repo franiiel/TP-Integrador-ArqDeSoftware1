@@ -36,7 +36,7 @@ describe('App', () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('nav')?.textContent).toContain('Mis inspecciones');
+    expect(compiled.querySelector('nav')?.textContent).toContain('Inspecciones');
     expect(compiled.querySelector('nav')?.textContent).toContain('Pendientes');
   });
 });

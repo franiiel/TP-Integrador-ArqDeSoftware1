@@ -144,7 +144,7 @@ Reglas entre módulos (ADR-04):
 - **Solo el inspector carga actas**, y solo de las inspecciones asignadas a él.
 - Permisos de consulta: el inspector ve solo sus actas; el **supervisor y el administrativo pueden consultar cualquier acta** (solo lectura).
 - Cada inspección genera exactamente un acta, y cada acta pertenece a un expediente.
-- Un acta tiene entre **1 y 10 fotos** y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
+- Un acta tiene **hasta 10 fotos** (puede no tener ninguna) y un único `tipoMedida`: `NINGUNA`, `INTIMACION` o `CLAUSURA`.
 - La ubicación se registra en la inspección (`ubicacion`, opcional) al labrar el acta.
 - Número de acta: **correlativo por año** (`2026-00001`), asignado dentro de la transacción con un lock de PostgreSQL por año (`pg_advisory_xact_lock`) y el máximo número de ese año. El año es el de `fechaEmision` en hora argentina, no el de la recepción.
 
@@ -184,7 +184,7 @@ Reglas entre módulos (ADR-04):
 
 - **Un test e2e del caso de uso** (`backend/test/caso-uso-minimo.e2e-spec.ts`) contra PostgreSQL real, con tokens firmados localmente en lugar de Auth0. Usa la base `inspecciones_test`, que se recrea en cada corrida; nunca la de desarrollo.
 - Tests unitarios solo donde haya lógica que lo justifique, no uno por servicio.
-- **Datos semilla:** `pnpm --filter backend seed` carga un inspector y un supervisor (con los `sub` de Auth0 tomados del `.env`), dos obras con su expediente y dos inspecciones del día.
+- **Datos semilla:** `pnpm --filter backend seed` carga un usuario por rol (inspector, supervisor y administrativo, con los `sub` de Auth0 tomados del `.env`), dos obras con su expediente y dos inspecciones del día.
 
 ## Convenciones de código
 

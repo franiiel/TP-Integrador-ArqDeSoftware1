@@ -3,10 +3,13 @@ import { Injectable, InjectionToken, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { ActaEmitida, ActaNueva, ErrorApi, Inspeccion } from './modelos';
 
-/** URL base de la API. En desarrollo `/api` pasa por el proxy de `ng serve` (proxy.conf.json). */
+/**
+ * URL base de la API, con la versión mayor (versionado por URL). En desarrollo `/api` pasa por el
+ * proxy de `ng serve` (proxy.conf.json) y en Docker por nginx.
+ */
 export const API_URL = new InjectionToken<string>('API_URL', {
   providedIn: 'root',
-  factory: () => '/api',
+  factory: () => '/api/v1',
 });
 
 /**
